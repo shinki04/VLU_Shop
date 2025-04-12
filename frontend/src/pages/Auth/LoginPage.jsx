@@ -50,23 +50,22 @@ function LoginPage() {
     }
   };
 
-
-useEffect(() => {
-  if (user) {
-    addToast({
-      title: "Success",
-      description: "Welcome back " + user.username,
-      timeout: 5000,
-      shouldShowTimeoutProgress: true,
-      classNames: {
-        closeButton: "opacity-100 absolute right-4 top-1/2 -translate-y-1/2",
-        icon: "w-6 h-6",
-      },
-      closeIcon: <X size={16} strokeWidth={0.75} absoluteStrokeWidth />,
-      color: "success",
-    });
-  }
-}, [user]);
+  useEffect(() => {
+    if (user) {
+      addToast({
+        title: "Success",
+        description: "Welcome back " + user.username,
+        timeout: 5000,
+        shouldShowTimeoutProgress: true,
+        classNames: {
+          closeButton: "opacity-100 absolute right-4 top-1/2 -translate-y-1/2",
+          icon: "w-6 h-6",
+        },
+        closeIcon: <X size={16} strokeWidth={0.75} absoluteStrokeWidth />,
+        color: "success",
+      });
+    }
+  }, [user]);
   // THÊM useEffect để mở Modal khi có lỗi
   useEffect(() => {
     if (error) {
@@ -164,7 +163,7 @@ useEffect(() => {
           isOpen={isOpen}
           onOpenChange={onOpenChange}
           title="Oops!"
-          message= {error}
+          message={error}
         />
       </div>
     </>

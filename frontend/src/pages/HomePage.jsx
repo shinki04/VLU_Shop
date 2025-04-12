@@ -8,7 +8,8 @@ import {
   EyeClosed,
   Eye,
   CircleCheck,
-  X,Check
+  X,
+  Check,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -27,18 +28,38 @@ import {
   CardBody,
   addToast,
   ToastProvider,
+  User,
 } from "@heroui/react";
 import CustomModal from "../components/CustomModal";
 
 export default function HomePage() {
-    const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
-  
-    const { user, logout, error} = useAuthStore();
+  const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
-	const handleLogout = () => {
-		logout();
-	};
-  
+  const { user, logout, error, isAuthenticated } = useAuthStore();
+  const nagative = useNavigate();
+  const handleLogout = async () => {
+    logout();
+  };
+
+  const nagativeLogin = async () => {
+    if (!user) {
+      nagative("/login");
+    } else {
+      //  addToast({
+      //   title: "Login r",
+      //   description: "Burh",
+      //   color:"primary"
+      //  })
+      <User
+        avatarProps={{
+          src: "https://i.pravatar.cc/150?u=a04258114e29026702d",
+        }}
+        description={user.role}
+        name={user.name}
+      />;
+    }
+  };
+
   useEffect(() => {
     if (error) {
       onOpen();
@@ -67,21 +88,29 @@ export default function HomePage() {
       >
         Show Toast
       </Button>
-        <Button 
-        onPress={onOpen}
-        title="Open"
-        />
-    
+      <Button onPress={onOpen} title="Open" />
 
-        <Button onPress={handleLogout} >Logout</Button>
-        <p>Name: {user?.username}</p>
-        <p>Email: {user?.email}</p>
-        <CustomModal
-          isOpen={isOpen}
-          onOpenChange={onOpenChange}
-          title="Oops!"
-          message= {error}
+      <Button onPress={handleLogout}>Logout</Button>
+      {!isAuthenticated ? (
+        <Button onPress={nagativeLogin}>Login</Button>
+      ) : (
+        <User
+          avatarProps={{
+            src: "https://i.pravatar.cc/150?u=a04258114e29026702d",
+          }}
+          description={user.role}
+          name={user.username}
         />
+      )}
+
+      <p>Name: {user?.username}</p>
+      <p>Email: {user?.email}</p>
+      <CustomModal
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        title="Oops!"
+        message={error}
+      />
     </div>
   );
 }

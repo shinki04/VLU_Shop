@@ -5,9 +5,10 @@ import path from "path";
 import morgan from "morgan";
 import connectDB from "./config/connectDB.js";
 import cookieParser from "cookie-parser";
-import authRoute from "./routes/authRoute.js";
+import authRoute from "./routes/authRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
-
+import userRoutes from "./routes/userRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 dotenv.config();
 const app = express();
 connectDB();
@@ -22,6 +23,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -37,7 +39,11 @@ if (process.env.NODE_ENV === "production") {
 // Routes
 app.use("/api/auth", authRoute);
 app.use("/api/category", categoryRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/upload", uploadRoutes);
 
+const __dirname = path.resolve();
+app.use("/uploads", express.static(path.join(__dirname + "/uploads")));
 
 // Start server
 const PORT = process.env.PORT || 3000;
