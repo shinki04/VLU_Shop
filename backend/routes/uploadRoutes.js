@@ -26,13 +26,9 @@ const storage = multer.diskStorage({
 
     if (uploadType === "multiple") {
       // Sản phẩm
-      const productName = req.body.product_name;
-      const productId = req.body.product_id || Date.now(); // Dùng timestamp tạm nếu chưa có ID
-      if (!productName) {
-        return cb(new Error("Vui lòng cung cấp product_name"), null);
-      }
-      const slug = slugify(productName, { lower: true, strict: true });
-      dest = `./public/uploads/products/${slug}-${productId}/`;
+     
+     
+      dest = `./public/uploads/products/`;
     } else {
       // Người dùng
       dest = "./public/uploads/user/";
@@ -69,6 +65,7 @@ const upload = multer({
 
 // Tuyến đường upload
 router.post("/", authMiddleware, isAdmin, (req, res) => {
+
   const uploadType = req.query.type || "single";
   const uploadHandler =
     uploadType === "multiple"

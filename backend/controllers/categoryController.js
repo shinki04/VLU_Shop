@@ -1,5 +1,5 @@
 import Category from "../models/categoryModel.js";
-
+import Product from "../models/productModel.js";
 const createCategory = async (req, res) => {
   try {
     const { name } = req.body;
@@ -30,7 +30,8 @@ const createCategory = async (req, res) => {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
@@ -60,7 +61,8 @@ const updateCategory = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      error: "Internal server error or name is existing",
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
@@ -74,6 +76,19 @@ const removeCategory = async (req, res) => {
         message: "Category not found",
       });
     }
+    // Cập nhật các sản phẩm liên kết với category bị xóa, gán chúng về category mặc định
+    const defaultCategory = await Category.findOne({ name: "Uncategorized" });
+    if (!defaultCategory) {
+      // Nếu không có category mặc định, có thể tạo mới category "Uncategorized"
+      const newCategory = new Category({ name: "Uncategorized" });
+      await newCategory.save();
+    }
+
+    // Cập nhật các sản phẩm
+    await Product.updateMany(
+      { category: removed._id },
+      { category: defaultCategory._id }
+    );
 
     return res.status(200).json({
       success: true,
@@ -84,6 +99,7 @@ const removeCategory = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
     });
   }
 };
@@ -124,7 +140,8 @@ const listCategory = async (req, res) => {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
@@ -171,9 +188,7 @@ const searchCategoryByKeyword = async (req, res) => {
     const total = await Category.countDocuments(query);
 
     // Lấy danh mục cho trang hiện tại
-    const categories = await Category.find(query)
-      .skip(skip)
-      .limit(limit);
+    const categories = await Category.find(query).skip(skip).limit(limit);
 
     // Kiểm tra nếu không có kết quả
     if (categories.length === 0 && keyword) {
