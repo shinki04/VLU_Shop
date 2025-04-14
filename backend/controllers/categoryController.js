@@ -48,7 +48,6 @@ const updateCategory = async (req, res) => {
         message: "Category not found",
       });
     }
-
     category.name = name;
 
     const updatedCategory = await category.save();
@@ -61,7 +60,7 @@ const updateCategory = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      error: "Internal server error",
+      error: "Internal server error or name is existing",
     });
   }
 };
@@ -119,7 +118,7 @@ const listCategory = async (req, res) => {
       total: total, // Tổng số danh mục
       page: page, // Trang hiện tại
       limit: limit, // Số danh mục trên mỗi trang
-      category: categories, // Mảng danh mục
+      categories: categories, // Mảng danh mục
     });
   } catch (error) {
     console.log(error);
@@ -130,35 +129,83 @@ const listCategory = async (req, res) => {
   }
 };
 
-const findCategoryById = async (req, res) => {
-  try {
-    const category = await Category.findOne({ _id: req.params.id });
+// const findCategoryByName = async (req, res) => {
+//   try {
+//     const category = await Category.findOne({ name: req.params.name });
 
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: "Category not found",
+//     if (!category) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Category not found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Get successfully",
+//       category: category,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(400).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+const searchCategoryByKeyword = async (req, res) => {
+  try {
+    const keyword = req.query.q || "";
+    const page = parseInt(req.query.page) || 1; // Mặc định là trang 1
+    const limit = parseInt(req.query.limit) || 10; // Mặc định 10 mục mỗi trang
+
+    // Tính số mục cần bỏ qua (skip) dựa trên trang
+    const skip = (page - 1) * limit;
+
+    // Tìm kiếm danh mục với từ khóa, hỗ trợ phân trang
+    const query = {
+      name: { $regex: keyword, $options: "i" }, // Không phân biệt hoa thường
+    };
+
+    // Đếm tổng số danh mục khớp với từ khóa
+    const total = await Category.countDocuments(query);
+
+    // Lấy danh mục cho trang hiện tại
+    const categories = await Category.find(query)
+      .skip(skip)
+      .limit(limit);
+
+    // Kiểm tra nếu không có kết quả
+    if (categories.length === 0 && keyword) {
+      return res.status(200).json({
+        success: true,
+        message: "No categories found",
+        categories: [],
+        total: 0,
+        page,
+        limit,
       });
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Get successfully",
-      category: category,
+      message: "Search successful",
+      categories,
+      total,
+      page,
+      limit,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
-
 export {
   createCategory,
   updateCategory,
   removeCategory,
   listCategory,
-  findCategoryById,
+  searchCategoryByKeyword,
 };

@@ -8,6 +8,7 @@ export default function AdminLayout() {
         {/* Sidebar */}
         <ul>
           <li><a href="/admin/dashboard">Dashboard</a></li>
+          <li><a href="/admin/category">Category</a> </li>
           <li><a href="/admin/users">Users</a></li>
         </ul>
       </aside>

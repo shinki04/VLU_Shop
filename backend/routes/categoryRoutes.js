@@ -5,7 +5,7 @@ import {
   updateCategory,
   removeCategory,
   listCategory,
-  findCategoryById,
+  searchCategoryByKeyword,
 } from "../controllers/categoryController.js";
 
 import { authMiddleware, isAdmin } from "../middlewares/authMiddleware.js";
@@ -17,6 +17,6 @@ router
   .delete(authMiddleware, isAdmin, removeCategory);
 
 router.route("/categories").get(listCategory);
-router.route("/:id").get(findCategoryById);
+router.route("/search").get(searchCategoryByKeyword);
 
-export default router;  
+export default router;

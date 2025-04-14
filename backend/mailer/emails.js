@@ -129,6 +129,27 @@ import {
 	}
   };
   
+  export const sendWelcomeBackEmail = async (email, name) => {
+	const mailOptions = {
+	  from: `"${sender.name}" <${sender.email}>`,
+	  to: email,
+	  subject: "Welcome Back Auth Company",
+	  html: `
+		<h1>Welcome back, ${name}!</h1>
+		<p>Thank you for joining Auth Company. We're excited to have you!</p>
+	
+	  `, // Tùy chỉnh HTML thay vì dùng template_uuid
+	};
+  
+	try {
+	  const info = await transporter.sendMail(mailOptions);
+	  console.log("Welcome email sent successfully", info.messageId);
+	} catch (error) {
+	  console.error("Error sending welcome email", error);
+	  throw new Error(`Error sending welcome email: ${error.message}`);
+	}
+  };
+
   export const sendPasswordResetEmail = async (email, resetURL) => {
 	const mailOptions = {
 	  from: `"${sender.name}" <${sender.email}>`,
