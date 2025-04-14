@@ -82,13 +82,14 @@ export const verifyEmail = async (req, res) => {
 };
 
 export const registerUser = async (req, res) => {
-  const { email, password, username, image } = req.body;
+  const { email, password, username } = req.body;
   if (!email || !password || !username) {
     return res.status(400).json({
       success: false,
       message: "Please provide all required fields",
     });
   }
+  let imageUrl = "/public/uploads/user/avatardefault.webp";
 
   try {
     const userExists = await User.findOne({ email });
@@ -99,10 +100,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    let imageUrl = "";
-    if (req.file) {
-      imageUrl = `/${req.file.path.replace(/\\/g, "/")}`;
-    }
     // const verificationToken = Math.floor(
     //   100000 + Math.random() * 900000
     // ).toString();
@@ -112,7 +109,7 @@ export const registerUser = async (req, res) => {
       email,
       password,
       username,
-      image: image || "",
+      image: imageUrl || "",
       verificationToken,
       verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
@@ -394,7 +391,6 @@ export const updateCurrentUser = async (req, res) => {
     });
   }
 };
-
 export const deleteUserById = async (req, res) => {
   try {
     const existingUser = await User.findByIdAndDelete(req.params.id);
@@ -404,10 +400,12 @@ export const deleteUserById = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    if (existingUser.image) {
+    if (
+      existingUser.image &&
+      existingUser.image !== "/public/uploads/user/avatardefault.webp"
+    ) {
+      console.log("Xóa ảnh:", existingUser.image);
       await fs.unlink(`.${existingUser.image}`);
-      existingUser.image = "";
-      await existingUser.save();
     }
 
     res.status(200).json({

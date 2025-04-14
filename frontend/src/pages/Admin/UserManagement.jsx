@@ -95,7 +95,14 @@ export default function UserManagement() {
       clearError();
     }
   }, [error, onOpen, clearError]);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchUsers(page, limit);
+    };
 
+    fetchData();
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -159,15 +166,13 @@ export default function UserManagement() {
       try {
         // Giữ lại URL cũ nếu không thay đổi
         let imageUrl = selectedItem.image;
-        console.log("typeof image:", typeof selectedItem.image);
-        console.log("instance of File:", selectedItem.image instanceof File);
-        console.log("image raw:", selectedItem.image);
+
         // Bước 1: upload ảnh nếu có
         if (editImage !== selectedItem.image) {
           imageUrl = await uploadImage(editImage);
+        } else {
+          imageUrl = selectedItem.image; // Keep old URL if no new image
         }
-
-     
 
         const updated = {
           // ...selectedItem,
@@ -177,7 +182,6 @@ export default function UserManagement() {
           image: imageUrl,
           isVerified: editIsVerified,
         };
-        console.log(updated);
         await updateUser(updated);
 
         toastCustom({

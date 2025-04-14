@@ -34,13 +34,16 @@ const useUserStore = create(
 
       clearError: () => set({ error: null }),
 
-      register: async (email, password, username) => {
+      register: async (email, password, username
+        
+      ) => {
         set({ isLoading: true, error: null });
         try {
           const response = await axios.post(`${API_URL}/register`, {
             email,
             password,
             username,
+           
           });
           set({
             user: response.data.user,
