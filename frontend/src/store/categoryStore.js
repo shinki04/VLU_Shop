@@ -16,6 +16,9 @@ const useCategoryStore = create(
       total: 0,
       page: 1,
       limit: 5,
+
+      clearError: () => set({ error: null }),
+
       fetchCategories: async (page = 1, limit = 5) => {
         set({ isLoading: true, error: null });
         try {
@@ -80,7 +83,9 @@ const useCategoryStore = create(
         try {
           await axios.delete(`${CATEGORY_URL}/${categoryId}`);
           set((state) => ({
-            categories: state.categories.filter((cat) => cat._id !== categoryId),
+            categories: state.categories.filter(
+              (cat) => cat._id !== categoryId
+            ),
             isLoading: false,
           }));
         } catch (err) {

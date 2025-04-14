@@ -10,7 +10,7 @@ import {
   CircleCheck,
   X,
 } from "lucide-react";
-import { Link, useNavigate, } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import CustomModal from "../../components/CustomModal";
 import {
   Modal,
@@ -68,7 +68,10 @@ function LoginPage() {
   useEffect(() => {
     if (error) {
       onOpen();
-      clearError();
+      setTimeout(() => {
+        onOpenChange(false);
+        clearError();
+      }, 9000);
     }
   }, [error, onOpen, clearError]);
 

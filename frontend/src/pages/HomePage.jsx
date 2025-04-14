@@ -52,7 +52,7 @@ export default function HomePage() {
       closeIcon: <X size={16} strokeWidth={0.75} absoluteStrokeWidth />,
       color: "success",
     });
-    navigate("/login");
+    nagative("/login");
   };
 
   const nagativeLogin = async () => {
@@ -91,7 +91,7 @@ export default function HomePage() {
             src: `http://localhost:3000${user.image}`,
           }}
           description={user.role}
-          name={user.name}
+          name={user.username}
         />
       )}
 

@@ -1,6 +1,7 @@
 import useUserStore from "../../store/userStore";
 import React, { useEffect, useState, useMemo } from "react";
 import CustomModal from "../../components/CustomModal";
+import { PasswordCriteria } from "../../components/PasswordStrengthMeter";
 import {
   Spinner,
   Input,
@@ -53,7 +54,7 @@ export default function UserManagement() {
     isLoading,
     total,
     error,
-    defaultImage,
+    createUserByAdmin,
     uploadImage,
     clearError,
   } = useUserStore();
@@ -94,17 +95,24 @@ export default function UserManagement() {
   useEffect(() => {
     if (error) {
       onOpen();
-      clearError();
+      console.log(error);
+      // setTimeout(() => {
+      //   clearError();
+      //   onOpenChange(false);
+      // }, 10000);
     }
+    // return () => {
+    //   clearError(); // Clear error when component unmounts
+    // }
   }, [error, onOpen, clearError]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchUsers(page, limit);
-    };
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     await fetchUsers(page, limit);
+  //   };
 
-    fetchData();
-  }, []);
+  //   fetchData();
+  // }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,46 +134,58 @@ export default function UserManagement() {
     []
   );
 
+  // Xóa lỗi khi đóng modal
+  // const handleCloseModal = () => {
+  //   clearError();
+  // };
+
   const handleInputChange = (value) => {
     setInputValue(value);
     debouncedSetFilterValue(value);
   };
 
-  const handleAddUser = async () => {
-    const imageUrl = !addImage
-      ? await uploadImage(defaultImage)
-      : await uploadImage(addImage);
+  const handleAddUser = async (e) => {
+    e.preventDefault()
+    // const imageUrl = !addImage
+    //   ? await uploadImage(defaultImage)
+    //   : await uploadImage(addImage);
+    try {
+      const newUser = {
+        username: addUsername,
+        email: addEmail,
+        password: addPassword,
+        role: addRole,
+        isVerified: addIsVerified,
+      };
+      console.log(newUser);
+      await createUserByAdmin(newUser);
 
-    const newUser = {
-      username: addUsername,
-      email: addEmail,
-      password: addPassword,
-      role: addRole,
-      image: imageUrl,
-      isVerified: addIsVerified,
-    };
+      toastCustom({
+        title: "Successfully",
+        description: "User added successfully!",
+      });
 
-    await addUser(newUser);
+      setAddModalOpen(false);
+      setAddUsername("");
+      setAddEmail("");
+      setAddRole("");
+      setAddIsVerified(false);
+      setAddPassword("");
+      setAddImage(null); // Reset ảnh sau khi thêm
 
-    toastCustom({
-      title: "Successfully",
-      description: "User added successfully!",
-    });
-
-    setAddModalOpen(false);
-    setAddUsername("");
-    setAddEmail("");
-    setAddRole("");
-    setAddIsVerified(false);
-    setAddPassword("");
-    setAddImage(null); // Reset ảnh sau khi thêm
-
-    // Refresh danh sách người dùng
-    await fetchUsers(page, limit);
+      // Refresh danh sách người dùng
+      await fetchUsers(page, limit);
+    } catch (err) {
+      toastCustom({
+        title: "Error",
+        error: error || "Error adding user",
+      });
+    }
   };
 
-  const handleUpdateUser = async () => {
+  const handleUpdateUser = async (e) => {
     if (selectedItem) {
+      e.preventDefault()
       try {
         // Giữ lại URL cũ nếu không thay đổi
         let imageUrl = selectedItem.image;
@@ -214,7 +234,9 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async () => {
+    
     try {
+    
       await deleteUser(selectedItem._id);
 
       toastCustom({
@@ -246,43 +268,74 @@ export default function UserManagement() {
         <ModalContent>
           <ModalHeader>Thêm người dùng</ModalHeader>
           <ModalBody>
-            <Input
-              label="Tên người dùng"
-              value={addUsername}
-              onChange={(e) => setAddUsername(e.target.value)}
-              placeholder="Nhập tên người dùng"
-            />
-            <Input
-              label="Email"
-              value={addEmail}
-              onChange={(e) => setAddEmail(e.target.value)}
-              placeholder="Nhập email"
-            />
-            <CustomInputPass
-              isRequired
-              label="Mật khẩu"
-              value={addPassword}
-              onChange={(e) => {
-                setAddPassword(e.target.value);
-              }}
-              // isInvalid={addPassword}
-              // errorMessage={addPassword}
-            />
+            <Form
+              encType="multipart/form-data"
+              className="space-y-4"
+              method="post"
+              onSubmit={handleAddUser}
+            >
+              <Input
+                label="Tên người dùng"
+                value={addUsername}
+                onChange={(e) => setAddUsername(e.target.value)}
+                placeholder="Nhập tên người dùng"
+              />
+              <Input
+                label="Email"
+                type="email"
+                isRequired
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                placeholder="Nhập email"
+              />
+              <CustomInputPass
+                isRequired
+                label="Mật khẩu"
+                value={addPassword}
+                onChange={(e) => {
+                  setAddPassword(e.target.value);
+                }}
+                // isInvalid={addPassword}
+                // errorMessage={addPassword}
+              />
 
-            <Input
-              label="Ảnh người dùng"
-              type="file"
-              onChange={(e) => setAddImage(e.target.files[0])}
-            />
+              <Select
+                isRequired
+                className="max-w-xs"
+                label="Role"
+                fullWidth
+                selectedKeys={[addRole]}
+                onSelectionChange={(keys) => setAddRole(Array.from(keys)[0])}
+              >
+                {["customer", "admin"].map((role) => (
+                  <SelectItem key={role}>{role}</SelectItem>
+                ))}
+              </Select>
+
+              <Select
+                isRequired
+                className="max-w-xs"
+                label="Đã xác thực ?"
+                fullWidth
+                selectedKeys={[addIsVerified ? "true" : "false"]}
+                onSelectionChange={(keys) => setAddIsVerified(keys.has("true"))}
+              >
+                {["true", "false"].map((addIsVerified) => (
+                  <SelectItem key={addIsVerified}>{addIsVerified}</SelectItem>
+                ))}
+              </Select>
+              <PasswordCriteria password={addPassword} />
+              <div className="flex flex-row gap-3">
+                <Button variant="flat" onPress={() => setAddModalOpen(false)}>
+                  Hủy
+                </Button>
+                <Button color="primary" type="submit">
+                  Lưu
+                </Button>
+              </div>
+            </Form>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setAddModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button color="primary" onPress={handleAddUser}>
-              Lưu
-            </Button>
-          </ModalFooter>
+          <ModalFooter></ModalFooter>
         </ModalContent>
       </Modal>
 
@@ -312,7 +365,13 @@ export default function UserManagement() {
                 />
               </div>
               <div className="md:basis-7/12 w-full">
-                <Form encType="multipart/form-data" className="space-y-4">
+                <Form
+                  encType="multipart/form-data"
+                  className="space-y-4"
+                  method="put"
+                  enctype="multipart/form-data"
+                  onSubmit={handleUpdateUser}
+                >
                   <Input
                     isRequired
                     label="Tên người dùng"
@@ -364,18 +423,26 @@ export default function UserManagement() {
                     type="file"
                     onChange={(e) => setEditImage(e.target.files[0])}
                   />
+                  <div className="flex flex-row grap-2">
+                    <Button
+                      variant="flat"
+                      onPress={() => setEditModalOpen(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      color="primary"
+                      type="submit"
+                      // onPress={handleUpdateUser}
+                    >
+                      Lưu
+                    </Button>
+                  </div>
                 </Form>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setEditModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button color="primary" onPress={handleUpdateUser}>
-              Lưu
-            </Button>
-          </ModalFooter>
+          <ModalFooter></ModalFooter>
         </ModalContent>
       </Modal>
 

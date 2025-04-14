@@ -28,7 +28,7 @@ const useUserStore = create(
       total: 0,
       page: 1,
       limit: 5,
-      defaultImage: "/uploads/user/default.png",
+      defaultImage: "/public/uploads/user/avatardefault.webp",
       isCheckingAuth: true,
       message: null,
 
@@ -243,7 +243,7 @@ const useUserStore = create(
         try {
           const res = await axios.post(USERS_URL, newUser);
           set((state) => ({
-            newUser: [...state.newUser, res.data],
+            newUser: [...state.users, res.data],
             isLoading: false,
           }));
         } catch (err) {
@@ -326,7 +326,7 @@ const useUserStore = create(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        users: state.users,
+        // users: state.users,
       }),
     }
   )

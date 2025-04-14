@@ -141,7 +141,7 @@ export const registerUser = async (req, res) => {
 };
 
 export const createUserByAdmin = async (req, res) => {
-  const { email, password, username, image, isVerified, role } = req.body;
+  const { email, password, username, isVerified, role } = req.body;
   if (!email || !password || !username) {
     return res.status(400).json({
       success: false,
@@ -158,16 +158,14 @@ export const createUserByAdmin = async (req, res) => {
       });
     }
 
-    let imageUrl = "";
-    if (req.file) {
-      imageUrl = `/${req.file.path.replace(/\\/g, "/")}`;
-    }
+    let imageUrl = "/public/uploads/user/avatardefault.webp";
+
 
     const user = new User({
       email,
       password,
       username,
-      image: image || "",
+      image: imageUrl,
       role: role || "customer",
       isVerified: isVerified ?? false,
     });
@@ -302,7 +300,7 @@ export const updateUserById = async (req, res) => {
     //     });
     //   }
     // Nếu có ảnh mới và khác ảnh cũ thì xóa ảnh cũ
-    if (image && image !== user.image) {
+    if (image && image !== user.image && user.image !== "/public/uploads/user/avatardefault.webp") {
       if (user.image) {
         try {
           await fs.unlink(`.${user.image}`);

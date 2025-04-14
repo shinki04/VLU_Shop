@@ -58,7 +58,8 @@ export default function CategoryManagement() {
     addCategory,
     updateCategory,
     deleteCategory,
-    searchCategoryByKeyword, // Thêm hàm tìm kiếm
+    searchCategoryByKeyword,
+    clearError, // Thêm hàm tìm kiếm
   } = useCategoryStore();
 
   const [page, setPage] = useState(1);
@@ -103,7 +104,7 @@ export default function CategoryManagement() {
     };
     fetchData();
   }, [page, limit, filterValue, fetchCategories, searchCategoryByKeyword]);
-  
+
   // Tạo hàm debounce để giới hạn tần suất cập nhật filterValue
   const debouncedSetFilterValue = useMemo(
     () =>
@@ -112,6 +113,10 @@ export default function CategoryManagement() {
       }, 200), // Chờ 200ms sau khi người dùng ngừng gõ
     []
   );
+
+  const handleCloseModal = () => {
+    clearError();
+  };
 
   // Xử lý thay đổi input
   const handleInputChange = (value) => {
@@ -230,6 +235,7 @@ export default function CategoryManagement() {
         onOpenChange={onOpenChange}
         title="Oops!"
         message={error}
+        onClose={handleCloseModal}
       />
       {/* Modal cho "Thêm" */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
@@ -237,10 +243,13 @@ export default function CategoryManagement() {
           <ModalHeader>Thêm danh mục</ModalHeader>
           <ModalBody>
             <Input
+              isRequired
               label="Tên danh mục"
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
               placeholder="Nhập tên danh mục"
+              isInvalid={addName !== "" } // Kiểm tra độ dài tên danh mục
+              errorMessage="Tên danh mục phải có ít nhất 3 ký tự"
             />
           </ModalBody>
           <ModalFooter>
