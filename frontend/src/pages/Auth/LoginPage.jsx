@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React from "react";
 import useUserStore from "../../store/userStore";
 import { useState, useEffect } from "react";
@@ -11,12 +10,7 @@ import {
   CircleCheck,
   X,
 } from "lucide-react";
-=======
-import React, { useState, useEffect } from "react";
-import { useAuthStore } from "../../store/authStore";
-import { Lock, Loader, EyeClosed, Eye, X } from "lucide-react";
->>>>>>> 30c4b3bd5a1da234c954de310036e8c7903b90bb
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, } from "react-router-dom";
 import CustomModal from "../../components/CustomModal";
 import {
   Modal,
@@ -37,20 +31,13 @@ import {
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isVisible, setIsVisible] = useState(false);
 
-<<<<<<< HEAD
   const { login, isLoading, error, user, clearError } = useUserStore();
   const [isVisible, setIsVisible] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
-=======
-  const { login, isLoading, error, user } = useAuthStore();
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const navigate = useNavigate();
->>>>>>> 30c4b3bd5a1da234c954de310036e8c7903b90bb
 
   const toggleVisibility = () => setIsVisible(!isVisible);
-
+  const navigate = useNavigate();
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -149,14 +136,14 @@ function LoginPage() {
                 }
                 type={isVisible ? "text" : "password"}
               />
-  
+
               {/* Password Requirements */}
-              <ul className="mt-2 text-xs text-gray-500 list-disc list-inside">
+              {/* <ul className="mt-2 text-xs text-gray-500 list-disc list-inside">
                 <li>Minimum 8 characters</li>
                 <li>Must contain at least 1 number</li>
                 <li>Must contain at least 1 uppercase and 1 lowercase</li>
                 <li>Must contain at least 1 symbol</li>
-              </ul>
+              </ul> */}
             </div>
 
             {/* Submit Button */}
