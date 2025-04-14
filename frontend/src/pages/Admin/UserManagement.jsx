@@ -20,7 +20,8 @@ import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import { debounce } from "lodash";
-
+// import { validatePassword, validateUsername } from "../../utils/validation.js";
+import CustomInputPass from "../../components/CustomInputPass.jsx";
 const columns = [
   { name: "STT", uid: "index" },
   { name: "Tên người dùng", uid: "username" },
@@ -70,7 +71,8 @@ export default function UserManagement() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-
+  const [passwordError, setPasswordError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   // Dữ liệu cho modal Thêm
   const [addUsername, setAddUsername] = useState("");
   const [addEmail, setAddEmail] = useState("");
@@ -95,7 +97,7 @@ export default function UserManagement() {
       clearError();
     }
   }, [error, onOpen, clearError]);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       await fetchUsers(page, limit);
@@ -103,6 +105,7 @@ export default function UserManagement() {
 
     fetchData();
   }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -255,13 +258,17 @@ export default function UserManagement() {
               onChange={(e) => setAddEmail(e.target.value)}
               placeholder="Nhập email"
             />
-            <Input
+            <CustomInputPass
+              isRequired
               label="Mật khẩu"
               value={addPassword}
-              onChange={(e) => setAddPassword(e.target.value)}
-              placeholder="Nhập mật khẩu"
-              type="password"
+              onChange={(e) => {
+                setAddPassword(e.target.value);
+              }}
+              // isInvalid={addPassword}
+              // errorMessage={addPassword}
             />
+
             <Input
               label="Ảnh người dùng"
               type="file"

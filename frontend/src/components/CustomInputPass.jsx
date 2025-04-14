@@ -1,57 +1,59 @@
-// import { Input } from "@heroui/react";
+import { useState } from "react";
+import { Input } from "@heroui/react";
+import { Eye, EyeClosed } from "lucide-react";
+import { validatePassword } from "../utils/validation";
 
-// import React from "react";
-// import { EyeClosed, Eye } from "lucide-react";
-// export default function CustomInputPass(
-//   errorMessage,
-//   label,
-//   labelPlacement,
-//   name,
-//   placeholder,
-//   value,
-//   onChange
-// ) {
-//   const [isVisible, setIsVisible] = React.useState(false);
+export default function CustomInputPass({
+  value,
+  onChange,
+  label = "Password",
+  name = "password",
+  placeholder = "Enter your password",
+  ...props
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
-//   const toggleVisibility = () => setIsVisible(!isVisible);
-//   const validatePassword = (value) =>
-//     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(value);
+  const toggleVisibility = () => setIsVisible(!isVisible);
 
-//   return (
-//     <Input
-//             isRequired
-//             color={
-//               password === ""
-//                 ? "default"
-//                 : validatePassword(password)
-//                 ? "default"
-//                 : "danger"
-//             }
-//             isInvalid={password !== "" && !validatePassword(password)}
-//             errorMessage="Please enter valid password"
-//             label="Password"
-//             labelPlacement="outside"
-//             name="password"
-//             placeholder="Enter your password"
-//             value={password}
-//             onChange={(e) => setPassword(e.target.value)}
-//             endContent={
-//               <button
-//                 aria-label="toggle password visibility"
-//                 className="focus:outline-none"
-//                 type="button"
-//                 onClick={toggleVisibility}
-//               >
-//                 {isVisible ? (
-// 					<EyeClosed size={16} strokeWidth={1.5} className="text-2xl text-default-400 pointer-events-none" />
-//                 //   <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-//                 ) : (
-//                 //   <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-// 				<Eye size={16} strokeWidth={1.5} className="text-2xl text-default-400 pointer-events-none" />
-//                 )}
-//               </button>
-//             }
-//             type={isVisible ? "text" : "password"}
-//           />
-//   );
-// }
+  const handleChange = (e) => {
+    const val = e.target.value;
+    onChange(e); // Gọi callback truyền từ ngoài
+
+    if (val !== "") {
+      setPasswordError(validatePassword(val) || "");
+    } else {
+      setPasswordError("");
+    }
+  };
+
+  return (
+    <Input
+      type={isVisible ? "text" : "password"}
+      label={label}
+      labelPlacement="outside"
+      name={name}
+      placeholder={placeholder}
+      value={value}
+      onChange={handleChange}
+      isRequired
+      isInvalid={value !== "" && !!passwordError}
+      errorMessage={value !== "" ? passwordError : ""}
+      endContent={
+        <button
+          type="button"
+          onClick={toggleVisibility}
+          className="focus:outline-none"
+          aria-label="Toggle password visibility"
+        >
+          {isVisible ? (
+            <EyeClosed size={16} strokeWidth={1.5} className="text-default-400 pointer-events-none" />
+          ) : (
+            <Eye size={16} strokeWidth={1.5} className="text-default-400 pointer-events-none" />
+          )}
+        </button>
+      }
+      {...props}
+    />
+  );
+}

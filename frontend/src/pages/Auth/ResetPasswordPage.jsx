@@ -11,10 +11,7 @@ import {
   CircleCheck,
   X,
 } from "lucide-react";
-import {
-  PasswordCriteria,
-  PasswordStrengthMeter,
-} from "../../components/PasswordStrengthMeter";
+import { PasswordCriteria } from "../../components/PasswordStrengthMeter";
 import React from "react";
 import CustomModal from "../../components/CustomModal";
 import {
@@ -33,11 +30,13 @@ import {
   CardBody,
   ToastProvider,
 } from "@heroui/react";
+import { validatePassword } from "../../utils/validation.js";
+
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { resetPassword, error, isLoading, message, clearError } =
-  useUserStore();
+    useUserStore();
   const [isVisible, setIsVisible] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
@@ -78,20 +77,14 @@ export default function ResetPasswordPage() {
     }
   };
 
-  const validatePassword = (value) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(value);
+  // const validatePassword = (value) =>
+  //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(value);
 
   const handlePasswordChange = (e) => {
     const value = e.target.value;
     setPassword(value);
 
-    if (!validatePassword(value)) {
-      setPasswordError(
-        "Password must be at least 8 characters, include upper/lowercase, number, and special character"
-      );
-    } else {
-      setPasswordError("");
-    }
+    setPasswordError(validatePassword(value));
 
     if (confirmPassword && value !== confirmPassword) {
       setConfirmError("Passwords do not match");

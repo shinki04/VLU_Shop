@@ -5,7 +5,7 @@ import {
   PasswordCriteria,
   PasswordStrengthMeter,
 } from "../../components/PasswordStrengthMeter";
-import { validatePassword, validateUsername } from "../../utils/validation.js";
+import CustomInputPass from "../../components/CustomInputPass";
 
 import useUserStore from "../../store/userStore";
 import CustomModal from "../../components/CustomModal";
@@ -33,21 +33,17 @@ const RegisterPage = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   const navigate = useNavigate();
-  const { register, error, isLoading, clearError } =
-    useUserStore();
+  const { register, error, isLoading, clearError } = useUserStore();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     try {
-     
       await register(email, password, name);
       navigate("/verify-email");
     } catch (error) {
       console.log(error);
     }
   };
-  const validatePassword = (value) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(value);
 
   const handleUsernameChange = (e) => {
     const value = e.target.value;
@@ -65,7 +61,6 @@ const RegisterPage = () => {
       setUsernameError("");
     }
   };
-  const toggleVisibility = () => setIsVisible(!isVisible);
 
   // THÊM useEffect để mở Modal khi có lỗi
   useEffect(() => {
@@ -135,45 +130,12 @@ const RegisterPage = () => {
                 PASSWORD
               </label>
               <div className="relative">
-                <Input
+                <CustomInputPass
                   isRequired
-                  color={
-                    password === ""
-                      ? "default"
-                      : validatePassword(password)
-                      ? "default"
-                      : "danger"
-                  }
-                  isInvalid={password !== "" && !validatePassword(password)}
-                  errorMessage="Please enter valid password"
-                  name="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  type={isVisible ? "text" : "password"}
                   className="w-full border border-gray-300 rounded-md p-2 h-10 focus:outline-none focus:ring-2 focus:ring-black overflow-hidden text-ellipsis whitespace-nowrap"
-                  endContent={
-                    <button
-                      aria-label="toggle password visibility"
-                      className="focus:outline-none absolute right-3 top-1/2 transform -translate-y-1/2"
-                      type="button"
-                      onClick={toggleVisibility}
-                    >
-                      {isVisible ? (
-                        <EyeClosed
-                          size={16}
-                          strokeWidth={1.5}
-                          className="text-xl text-gray-400 pointer-events-none"
-                        />
-                      ) : (
-                        <Eye
-                          size={16}
-                          strokeWidth={1.5}
-                          className="text-xl text-gray-400 pointer-events-none"
-                        />
-                      )}
-                    </button>
-                  }
                 />
               </div>
               {/* Password Requirements */}
