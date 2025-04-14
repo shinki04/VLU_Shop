@@ -69,8 +69,13 @@ const upload = multer({
 
 // Tuyến đường upload
 router.post("/", authMiddleware, isAdmin, (req, res) => {
+  console.log("req.file:", req.file);
+  console.log("req.body:", req.body);
   const uploadType = req.query.type || "single";
-  const uploadHandler = uploadType === "multiple" ? upload.array("images", 5) : upload.single("image");
+  const uploadHandler =
+    uploadType === "multiple"
+      ? upload.array("images", 5)
+      : upload.single("image");
 
   uploadHandler(req, res, async (err) => {
     if (err) {

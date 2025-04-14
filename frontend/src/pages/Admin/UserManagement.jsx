@@ -159,11 +159,18 @@ export default function UserManagement() {
       try {
         // Giữ lại URL cũ nếu không thay đổi
         let imageUrl = selectedItem.image;
+        console.log("typeof image:", typeof selectedItem.image);
+        console.log("instance of File:", selectedItem.image instanceof File);
+        console.log("image raw:", selectedItem.image);
         // Bước 1: upload ảnh nếu có
-        if (selectedItem.image && typeof selectedItem.image !== "string") {
-          imageUrl = await uploadImage(selectedItem.image);
+        if (editImage !== selectedItem.image) {
+          imageUrl = await uploadImage(editImage);
         }
+
+     
+
         const updated = {
+          // ...selectedItem,
           _id: selectedItem._id,
           username: editUsername,
           role: editRole,
@@ -220,7 +227,7 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="p-6">
+    <div className="">
       <CustomModal
         isOpen={isOpen}
         onOpenChange={onOpenChange}
@@ -329,9 +336,9 @@ export default function UserManagement() {
                     className="max-w-xs"
                     label="Đã xác thực ?"
                     fullWidth
-                    selectedKeys={[editIsVerified.toString()]}
+                    selectedKeys={[editIsVerified ? "true" : "false"]}
                     onSelectionChange={(keys) =>
-                      setEditIsVerified(Array.from(keys)[0])
+                      setEditIsVerified(keys.has("true"))
                     }
                   >
                     {["true", "false"].map((editIsVerified) => (

@@ -255,13 +255,12 @@ const useUserStore = create(
       updateUser: async (updatedUser) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.put(`${USERS_URL}/${updatedUser._id}`, 
-            // username: updatedUser.username,
-            // role: updatedUser.role,
-            // isVerified: updatedUser.isVerified,
-            // image: updatedUser.image,
-            updatedUser
-          );
+          const res = await axios.put(`${USERS_URL}/${updatedUser._id}`, {
+            username: updatedUser.username,
+            role: updatedUser.role,
+            isVerified: updatedUser.isVerified,
+            image: updatedUser.image,
+          });
           set((state) => ({
             users: state.users.map((user) =>
               user._id === updatedUser._id ? res.data : user
