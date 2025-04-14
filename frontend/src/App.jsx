@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, BrowserRouter } from "react-router-dom";
+import { useEffect } from "react";
 import { HeroUIProvider } from "@heroui/react";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/Auth/LoginPage";
@@ -14,6 +15,7 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 import CategoryManagement from "./pages/Admin/CategoryManagement";
 import AdminHome from "./pages/Admin/AdminHome";
 import UserManagement from "./pages/Admin/UserManagement";
+import NotFound from "./pages/NotFound";
 // redirect authenticated users to the home page
 // const RedirectAuthenticatedUser = ({ children }) => {
 // 	const { isAuthenticated, user } = useAuthStore();
@@ -26,20 +28,34 @@ import UserManagement from "./pages/Admin/UserManagement";
 // };
 
 function App() {
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty(
+        "--visual-viewport-height",
+        `${vh}px`
+      );
+    };
+
+    updateViewportHeight();
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+    window.addEventListener("resize", updateViewportHeight);
+
+    return () => {
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateViewportHeight
+      );
+      window.removeEventListener("resize", updateViewportHeight);
+    };
+  }, []);
   return (
     <HeroUIProvider>
       <ToastProvider placement="top-right" />
-      <div className="container mx-auto">
+      <div className="h-[var(--visual-viewport-height)]  min-h-screen container mx-auto">
         <BrowserRouter>
           <Routes>
-            <Route
-              path="/"
-              element={
-                // <ProtectedRoute>
-                <HomePage />
-                // </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify-email" element={<EmailVerificationPage />} />
@@ -50,8 +66,6 @@ function App() {
             />
             {/* <Route path="/logout" element={<LogoutPage />} /> */}
 
-    
-
             <Route
               path="/admin"
               element={
@@ -60,13 +74,12 @@ function App() {
                 </AuthGuard>
               }
             >
-               <Route path="" element={<AdminHome/>}/>
-              <Route path="dashboard" element={<AdminDashboard/>}/>
-              <Route path="category" element={<CategoryManagement/>}/>
-              <Route path="users" element={<UserManagement/>} />
-
-
+              <Route path="" element={<AdminHome />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="category" element={<CategoryManagement />} />
+              <Route path="users" element={<UserManagement />} />
             </Route>
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </div>

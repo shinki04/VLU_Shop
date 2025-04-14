@@ -1,6 +1,7 @@
-import { useAuthStore } from "../../store/authStore";
+import useUserStore from "../../store/userStore";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { toastCustom } from "../../hooks/toastCustom";
 import {
   Mail,
   Lock,
@@ -11,9 +12,9 @@ import {
   X,
 } from "lucide-react";
 import {
-    PasswordCriteria,
-    PasswordStrengthMeter,
-  } from "../../components/PasswordStrengthMeter";
+  PasswordCriteria,
+  PasswordStrengthMeter,
+} from "../../components/PasswordStrengthMeter";
 import React from "react";
 import CustomModal from "../../components/CustomModal";
 import {
@@ -30,19 +31,28 @@ import {
   Tab,
   Card,
   CardBody,
-  addToast,
   ToastProvider,
 } from "@heroui/react";
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { resetPassword, error, isLoading, message } = useAuthStore();
+  const { resetPassword, error, isLoading, message, clearError } =
+  useUserStore();
   const [isVisible, setIsVisible] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
   const { token } = useParams();
   const navigate = useNavigate();
   const toggleVisibility = () => setIsVisible(!isVisible);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
+
+  // THÊM useEffect để mở Modal khi có lỗi
+  useEffect(() => {
+    if (error) {
+      onOpen();
+      clearError();
+    }
+  }, [error, onOpen, clearError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,6 +67,10 @@ export default function ResetPasswordPage() {
       // toast.success("Password reset successfully, redirecting to login page...");
       setTimeout(() => {
         navigate("/login");
+        toastCustom({
+          title: "Success",
+          description: "Reset password successfully",
+        });
       }, 2000);
     } catch (error) {
       console.error(error);
@@ -99,7 +113,12 @@ export default function ResetPasswordPage() {
   return (
     <div>
       <h2>Reset Password</h2>
-      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+      <CustomModal
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        title="Oops!"
+        message={error}
+      />
       {message && <p className="text-green-500 text-sm mb-4">{message}</p>}
 
       <Form
@@ -149,7 +168,7 @@ export default function ResetPasswordPage() {
           errorMessage={confirmError}
           isInvalid={!!confirmError}
         />
-<PasswordCriteria password={password} />
+        <PasswordCriteria password={password} />
         <div className="flex gap-2">
           <Button
             color="primary"

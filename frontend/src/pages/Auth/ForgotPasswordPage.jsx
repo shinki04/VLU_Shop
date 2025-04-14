@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuthStore } from "../../store/authStore";
+import useUserStore from "../../store/userStore";
 import { ArrowLeft, Loader, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -18,7 +18,6 @@ import {
   Tab,
   Card,
   CardBody,
-  addToast,
   ToastProvider,
 } from "@heroui/react";
 import CustomModal from "../../components/CustomModal";
@@ -28,7 +27,7 @@ export const ForgotPasswordPage = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [countdown, setCountdown] = useState(20);
   const [canResend, setCanResend] = useState(false);
-  const { isLoading, forgotPassword, error } = useAuthStore();
+  const { isLoading, forgotPassword, error ,clearError} = useUserStore();
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
   const submitLogic = async () => {
@@ -65,6 +64,13 @@ export const ForgotPasswordPage = () => {
     return () => clearTimeout(timer);
   }, [isSubmitted, countdown, canResend , isLoading]);
 
+    // Hiển thị lỗi nếu có
+    useEffect(() => {
+      if (error) {
+        onOpen();
+        clearError();
+      }
+    }, [error, onOpen, clearError]);
   return (
     <div>
       {!isSubmitted ? (
@@ -123,7 +129,7 @@ export const ForgotPasswordPage = () => {
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         title="Oops!"
-        message={"Some Wrong ??? " + error}
+        message={error}
       />
     </div>
   );

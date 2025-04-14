@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuthStore } from "../../store/authStore";
+import useUserStore from "../../store/userStore";
 import { useState, useEffect } from "react";
 import {
   Mail,
@@ -33,7 +33,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, isLoading, error, user } = useAuthStore();
+  const { login, isLoading, error, user, clearError } = useUserStore();
   const [isVisible, setIsVisible] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
@@ -70,8 +70,9 @@ function LoginPage() {
   useEffect(() => {
     if (error) {
       onOpen();
+      clearError();
     }
-  }, [error, onOpen]);
+  }, [error, onOpen, clearError]);
 
   return (
     <>

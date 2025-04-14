@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuthStore } from "../store/authStore";
+import useUserStore from "../store/userStore";
 import { useState, useEffect } from "react";
 import {
   Mail,
@@ -35,7 +35,7 @@ import CustomModal from "../components/CustomModal";
 export default function HomePage() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
-  const { user, logout, error, isAuthenticated } = useAuthStore();
+  const { user, logout, error, isAuthenticated  } = useUserStore();
   const nagative = useNavigate();
   const handleLogout = async () => {
     logout();
@@ -50,22 +50,15 @@ export default function HomePage() {
       //   description: "Burh",
       //   color:"primary"
       //  })
-      <User
-        avatarProps={{
-          src: "https://i.pravatar.cc/150?u=a04258114e29026702d",
-        }}
-        description={user.role}
-        name={user.name}
-      />;
     }
   };
 
   useEffect(() => {
     if (error) {
       onOpen();
+      
     }
   }, [error, onOpen]);
-
   return (
     <div>
       <Button
@@ -96,10 +89,10 @@ export default function HomePage() {
       ) : (
         <User
           avatarProps={{
-            src: "https://i.pravatar.cc/150?u=a04258114e29026702d",
+            src: `http://localhost:3000${user.image}`,
           }}
           description={user.role}
-          name={user.username}
+          name={user.name}
         />
       )}
 

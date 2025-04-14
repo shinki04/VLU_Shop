@@ -13,6 +13,9 @@ dotenv.config();
 const app = express();
 connectDB();
 
+const __dirname = path.resolve();
+app.use("/public/uploads", express.static(path.join(__dirname + "public/uploads")));
+
 // Middleware
 app.use(morgan("dev"));
 app.use(
@@ -34,16 +37,15 @@ if (process.env.NODE_ENV === "production") {
   app.get("*", (req, res) => {
     res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
   });
+} else {
+  // Cấu hình cho môi trường development
+  app.use("/public/uploads", express.static(path.join(__dirname, "public/uploads")));
 }
-
 // Routes
 app.use("/api/auth", authRoute);
 app.use("/api/category", categoryRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/upload", uploadRoutes);
-
-const __dirname = path.resolve();
-app.use("/uploads", express.static(path.join(__dirname + "/uploads")));
 
 // Start server
 const PORT = process.env.PORT || 3000;

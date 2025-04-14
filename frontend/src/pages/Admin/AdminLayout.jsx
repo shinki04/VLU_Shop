@@ -1,8 +1,19 @@
 import React from 'react'
 import { Outlet } from "react-router-dom";
-
+import {
+  Navbar, 
+  NavbarBrand, 
+  NavbarContent, 
+  NavbarItem, 
+  NavbarMenuToggle,
+  NavbarMenu,
+  NavbarMenuItem
+} from "@heroui/navbar";
 export default function AdminLayout() {
   return (
+
+
+    
     <div className="flex">
       <aside className="w-64 bg-gray-800 text-white p-4">
         {/* Sidebar */}

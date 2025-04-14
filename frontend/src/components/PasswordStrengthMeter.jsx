@@ -1,4 +1,5 @@
 import { Check, X ,CircleCheck, CircleAlert  } from "lucide-react";
+import { validatePassword, validateUsername } from "../utils/validation.js";
 
 export const PasswordCriteria = ({ password }) => {
 	const criteria = [

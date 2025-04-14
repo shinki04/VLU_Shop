@@ -11,8 +11,10 @@ const router = express.Router();
 const ensureDir = async (dir) => {
   try {
     await fs.mkdir(dir, { recursive: true });
+    console.log(`Directory ${dir} created or already exists`);
   } catch (error) {
     console.error(`Lỗi khi tạo thư mục ${dir}:`, error);
+    throw new Error(`Không thể tạo thư mục ${dir}: ${error.message}`);
   }
 };
 
@@ -30,10 +32,10 @@ const storage = multer.diskStorage({
         return cb(new Error("Vui lòng cung cấp product_name"), null);
       }
       const slug = slugify(productName, { lower: true, strict: true });
-      dest = `uploads/products/${slug}-${productId}/`;
+      dest = `./public/uploads/products/${slug}-${productId}/`;
     } else {
       // Người dùng
-      dest = "uploads/user/";
+      dest = "./public/uploads/user/";
     }
 
     await ensureDir(dest);

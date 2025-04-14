@@ -157,7 +157,7 @@ export const createUserByAdmin = async (req, res) => {
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: "Email already exists",
       });
     }
 
@@ -286,7 +286,7 @@ export const getCurrentUser = async (req, res) => {
 };
 export const updateUserById = async (req, res) => {
   try {
-    const { username, email, image, role } = req.body;
+    const { username, image, role, isVerified } = req.body;
 
     const user = await User.findById(req.params.id);
 
@@ -295,40 +295,39 @@ export const updateUserById = async (req, res) => {
         success: false,
         message: "User not found",
       });
-    } else {
-      const existingUser = await User.findOne({ email: req.body.email });
-
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: "Email already exists",
-        });
-      }
-
-      // Nếu có ảnh mới và khác ảnh cũ thì xóa ảnh cũ
-      if (image && image !== user.image) {
-        if (user.image) {
-          try {
-            await fs.unlink(`.${user.image}`);
-          } catch (error) {
-            console.error(`Lỗi khi xóa ảnh cũ ${user.image}:`, error);
-          }
+    }
+    // } else {
+    //   const existingUser = await User.findOne({ email });
+    //   if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+    //     return res.status(400).json({
+    //       success: false,
+    //       message: "Email already exists",
+    //     });
+    //   }
+    // Nếu có ảnh mới và khác ảnh cũ thì xóa ảnh cũ
+    if (image && image !== user.image) {
+      if (user.image) {
+        try {
+          await fs.unlink(`.${user.image}`);
+        } catch (error) {
+          console.error(`Lỗi khi xóa ảnh cũ ${user.image}:`, error);
         }
       }
-
-      // Cập nhật thông tin
-      user.username = username || user.username;
-      user.email = email || user.email;
-      user.role = role || user.role;
-      user.image = image || user.image;
-
-      const updatedUser = await user.save();
-
-      res.status(200).json({
-        success: true,
-        user: updatedUser,
-      });
     }
+
+    // Cập nhật thông tin
+    user.username = username || user.username;
+    // user.email = email || user.email;
+    user.role = role || user.role;
+    user.isVerified = isVerified || user.isVerified;
+    user.image = image || user.image;
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      success: true,
+      user: updatedUser,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,

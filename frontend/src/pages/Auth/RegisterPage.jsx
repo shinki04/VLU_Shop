@@ -1,11 +1,14 @@
-import { Loader, Lock, Mail, User , EyeClosed , Eye} from "lucide-react";
+import { Loader, Lock, Mail, User, EyeClosed, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   PasswordCriteria,
   PasswordStrengthMeter,
 } from "../../components/PasswordStrengthMeter";
-import { useAuthStore } from "../../store/authStore";
+import { validatePassword, validateUsername } from "../../utils/validation.js";
+
+import useUserStore from "../../store/userStore";
+import CustomModal from "../../components/CustomModal";
 import {
   Modal,
   ModalContent,
@@ -30,7 +33,7 @@ const RegisterPage = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   const navigate = useNavigate();
-  const { register, error, isLoading } = useAuthStore();
+  const { register, error, isLoading, clearError } = useUserStore();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -66,8 +69,9 @@ const RegisterPage = () => {
   useEffect(() => {
     if (error) {
       onOpen();
+      clearError();
     }
-  }, [error, onOpen]);
+  }, [error, onOpen, clearError]);
 
   return (
     <>
@@ -133,11 +137,19 @@ const RegisterPage = () => {
                 onClick={toggleVisibility}
               >
                 {isVisible ? (
-					<EyeClosed size={16} strokeWidth={1.5} className="text-2xl text-default-400 pointer-events-none" />
-                //   <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                  <EyeClosed
+                    size={16}
+                    strokeWidth={1.5}
+                    className="text-2xl text-default-400 pointer-events-none"
+                  />
                 ) : (
-                //   <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-				<Eye size={16} strokeWidth={1.5} className="text-2xl text-default-400 pointer-events-none" />
+                  //   <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                  //   <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                  <Eye
+                    size={16}
+                    strokeWidth={1.5}
+                    className="text-2xl text-default-400 pointer-events-none"
+                  />
                 )}
               </button>
             }
@@ -167,10 +179,9 @@ const RegisterPage = () => {
               </p>
             </CardBody>
           </Card>
-
         </Form>
 
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        {/* <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
           <ModalContent>
             {(onClose) => (
               <>
@@ -193,7 +204,13 @@ const RegisterPage = () => {
               </>
             )}
           </ModalContent>
-        </Modal>
+        </Modal> */}
+        <CustomModal
+          isOpen={isOpen}
+          onOpenChange={onOpenChange}
+          title="Oops!"
+          message={error}
+        />
       </div>
     </>
   );

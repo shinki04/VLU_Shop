@@ -7,9 +7,10 @@ import {
   TableRow,
   TableCell,
   Button,
+  Chip,
 } from "@heroui/react";
 import { PaginationControls } from "../../components/Pagination/PaginationControls";
-
+import { UserRoundX, UserRoundCheck } from "lucide-react";
 // Icon tùy chỉnh cho "Sửa" (bút chì)
 const EditIcon = ({ size = 20 }) => (
   // <svg
@@ -82,33 +83,77 @@ export const TableComponent = ({
     if (columnKey === "index") {
       return (page - 1) * limit + index + 1; // STT
     }
-    if (columnKey === "actions") {
-      return (
-        <div className="flex gap-2">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            color="primary"
-            onPress={() => onEdit && onEdit(item)}
-            aria-label="Edit"
+    switch (columnKey) {
+      case "actions":
+        return (
+          <div className="flex gap-2">
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              color="primary"
+              onPress={() => onEdit && onEdit(item)}
+              aria-label="Edit"
+            >
+              <EditIcon />
+            </Button>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              color="danger"
+              onPress={() => onDelete && onDelete(item)}
+              aria-label="Delete"
+            >
+              <DeleteIcon />
+            </Button>
+          </div>
+        );
+
+      case "image": {
+        const imageUrl = Array.isArray(item.image) ? item.image[0] : item.image;
+        const baseUrl =
+          import.meta.env.NODE_ENV === "production"
+            ? ""
+            : "http://localhost:3000";
+        const fullImageUrl = `${baseUrl}${imageUrl}`;
+
+        return (
+          <img
+            src={fullImageUrl}
+            alt="image"
+            loading="lazy"
+            style={{ width: "50px", height: "50px", objectFit: "cover" }}
+          />
+        );
+      }
+      case "role":
+        return (
+          <Chip
+            className="lg:min-w-20 text-center leading-3	"
+            color={item.role === "admin" ? "secondary" : "default"}
           >
-            <EditIcon />
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            color="danger"
-            onPress={() => onDelete && onDelete(item)}
-            aria-label="Delete"
+            {item.role}
+          </Chip>
+        );
+      case "isVerified": {
+        return (
+          <Chip
+            className="text-center font-extralight"
+            color={item.isVerified ? "success" : "warning"}
+            // endContent={item.isVerified ? <UserRoundCheck /> : <UserRoundX />}
           >
-            <DeleteIcon />
-          </Button>
-        </div>
-      );
+            {item.isVerified ? (
+              <UserRoundCheck strokeWidth={1.25} color="#ffffff" />
+            ) : (
+              <UserRoundX strokeWidth={1.25} color="#ffffff" />
+            )}
+          </Chip>
+        );
+      }
+      default:
+        return item[columnKey] || ""; // Giá trị mặc định
     }
-    return item[columnKey] || ""; // Giá trị mặc định
   };
 
   // Sử dụng renderCell từ props nếu có, nếu không dùng mặc định
@@ -118,7 +163,6 @@ export const TableComponent = ({
     <Table
       isHeaderSticky
       aria-label="Generic Table"
-      selectionMode="single"
       color="secondary"
       bottomContent={
         totalPages > 0 && (
@@ -133,9 +177,7 @@ export const TableComponent = ({
     >
       <TableHeader columns={headerColumns}>
         {(column) => (
-          <TableColumn key={column.uid} 
-         
-          align="start">
+          <TableColumn key={column.uid} align="start">
             {column.name}
           </TableColumn>
         )}

@@ -6,11 +6,21 @@ const USERS_URL =
   import.meta.env.MODE === "development"
     ? "http://localhost:3000/api/users"
     : "/api/users";
+const API_URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:3000/api/auth"
+    : "/api/auth";
+
+const UPLOAD_URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:3000/api/upload"
+    : "/api/upload";
+axios.defaults.withCredentials = true;
 
 const useUserStore = create(
   persist(
     (set) => ({
-      user: null,
+      currentUser: null,
       users: [],
       isAuthenticated: false,
       isLoading: false,
@@ -18,53 +28,149 @@ const useUserStore = create(
       total: 0,
       page: 1,
       limit: 5,
+      defaultImage: "/uploads/user/default.png",
+      isCheckingAuth: true,
+      message: null,
 
-      //   login: async (data) => {
-      //     set({ isLoading: true, error: null });
-      //     try {
-      //       const res = await axios.post(`${USERS_URL}/auth`, data);
-      //       set({ user: res.data, isAuthenticated: true, isLoading: false });
-      //     } catch (err) {
-      //       set({
-      //         error: err.response?.data?.message || "Login failed",
-      //         isLoading: false,
-      //       });
-      //       throw err;
-      //     }
-      //   },
+      clearError: () => set({ error: null }),
 
-      //   logout: async () => {
-      //     set({ isLoading: true, error: null });
-      //     try {
-      //       await axios.post(`${USERS_URL}/logout`);
-      //       set({ user: null, isAuthenticated: false, isLoading: false });
-      //     } catch (err) {
-      //       set({
-      //         error: err.response?.data?.message || "Logout failed",
-      //         isLoading: false,
-      //       });
-      //     }
-      //   },
+      register: async (email, password, username) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axios.post(`${API_URL}/register`, {
+            email,
+            password,
+            username,
+          });
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || "Error signing up",
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
 
-      //   register: async (data) => {
-      //     set({ isLoading: true, error: null });
-      //     try {
-      //       const res = await axios.post(USERS_URL, data);
-      //       set({ user: res.data, isAuthenticated: true, isLoading: false });
-      //     } catch (err) {
-      //       set({
-      //         error: err.response?.data?.message || "Register failed",
-      //         isLoading: false,
-      //       });
-      //       throw err;
-      //     }
-      //   },
+      login: async (email, password) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axios.post(`${API_URL}/login`, {
+            email,
+            password,
+          });
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || "Error logging in",
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      logout: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          await axios.post(`${API_URL}/logout`);
+          set({ user: null, isAuthenticated: false, isLoading: false });
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || "Error logging out",
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      verifyEmail: async (code) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axios.post(`${API_URL}/verify-email`, {
+            code,
+          });
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          return response.data;
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || "Error verifying email",
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      checkAuth: async () => {
+        set({ isCheckingAuth: true, error: null });
+        try {
+          const response = await axios.get(`${API_URL}/check-auth`);
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            isCheckingAuth: false,
+          });
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || "Error checking auth",
+            isCheckingAuth: false,
+            isAuthenticated: false,
+            user: null,
+          });
+        }
+      },
+
+      forgotPassword: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axios.post(`${API_URL}/forgot-password`, {
+            email,
+          });
+          set({ message: response.data.message, isLoading: false });
+        } catch (error) {
+          set({
+            isLoading: false,
+            error:
+              error.response?.data?.message ||
+              "Error sending reset password email",
+          });
+          throw error;
+        }
+      },
+
+      resetPassword: async (token, password) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axios.post(
+            `${API_URL}/reset-password/${token}`,
+            { password }
+          );
+          set({ message: response.data.message, isLoading: false });
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error.response?.data?.message || "Error resetting password",
+          });
+          throw error;
+        }
+      },
 
       updateProfile: async (data) => {
         set({ isLoading: true, error: null });
         try {
           const res = await axios.put(`${USERS_URL}/profile`, data);
-          set({ user: res.data, isLoading: false });
+          set({ currentUser: res.data, isLoading: false });
         } catch (err) {
           set({
             error: err.response?.data?.message || "Update profile failed",
@@ -129,16 +235,36 @@ const useUserStore = create(
         }
       },
 
+      createUserByAdmin: async (newUser) => {
+        set({ isLoading: true, error: null });
+        try {
+          const res = await axios.post(USERS_URL, newUser);
+          set((state) => ({
+            newUser: [...state.newUser, res.data],
+            isLoading: false,
+          }));
+        } catch (err) {
+          set({
+            error: err.response?.data?.message || "Error add data",
+            isLoading: false,
+          });
+          throw err;
+        }
+      },
+
       updateUser: async (updatedUser) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.put(
-            `${USERS_URL}/${updatedUser.userId}`,
+          const res = await axios.put(`${USERS_URL}/${updatedUser._id}`, 
+            // username: updatedUser.username,
+            // role: updatedUser.role,
+            // isVerified: updatedUser.isVerified,
+            // image: updatedUser.image,
             updatedUser
           );
           set((state) => ({
             users: state.users.map((user) =>
-              user._id === updatedUser.userId ? res.data : user
+              user._id === updatedUser._id ? res.data : user
             ),
             isLoading: false,
           }));
@@ -178,14 +304,10 @@ const useUserStore = create(
         try {
           const formData = new FormData();
           formData.append("image", image);
-          const res = await axios.post(
-            `${USERS_URL}/upload?type=single`,
-            formData,
-            {
-              headers: { "Content-Type": "multipart/form-data" },
-              withCredentials: true,
-            }
-          );
+          const res = await axios.post(`${UPLOAD_URL}/?type=single`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            withCredentials: true,
+          });
           set({ isLoading: false });
           return res.data.images[0]; // Trả về URL ảnh
         } catch (err) {
@@ -202,6 +324,7 @@ const useUserStore = create(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        users: state.users,
       }),
     }
   )

@@ -14,14 +14,14 @@ import { Loader, Lock, Mail, User } from "lucide-react";
 import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
+import useUserStore from "../../store/userStore";
 
 export const EmailVerificationPage = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const navigate = useNavigate();
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
-  const { error, isLoading, verifyEmail } = useAuthStore();
+  const { error, isLoading, verifyEmail ,clearError} = useUserStore();
 
   // Auto submit when all fields are filled
 //   useEffect(() => {
@@ -56,8 +56,9 @@ export const EmailVerificationPage = () => {
   useEffect(() => {
     if (error) {
       onOpen();
+      clearError();
     }
-  }, [error, onOpen]);
+  }, [error, onOpen,clearError]);
   return (
     <>
       <Form
