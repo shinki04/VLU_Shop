@@ -5,7 +5,7 @@ const FuzzyText = ({
   fontSize = "clamp(2rem, 10vw, 10rem)",
   fontWeight = 900,
   fontFamily = "inherit",
-  color = "#fff",
+  color = "initial", // Mặc định là initial
   enableHover = true,
   baseIntensity = 0.18,
   hoverIntensity = 0.5,
@@ -17,6 +17,14 @@ const FuzzyText = ({
     let isCancelled = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Lấy màu sắc từ class đang áp dụng trên phần tử cha
+    const getColorFromTheme = () => {
+      if (color !== "initial") return color;
+      // Kiểm tra màu sắc từ phần tử cha, ví dụ lấy màu từ body
+      const bodyColor = window.getComputedStyle(document.body).color;
+      return bodyColor || "black"; // fallback màu nếu không lấy được
+    };
 
     const init = async () => {
       if (document.fonts?.ready) {
@@ -46,9 +54,9 @@ const FuzzyText = ({
         document.body.removeChild(temp);
       }
 
-      const text = React.Children.toArray(children).join("");
+      const text = React.Children.toArray(children).join(" ");
 
-      // Create offscreen canvas
+      // Tạo canvas offscreen để đo chiều rộng của text
       const offscreen = document.createElement("canvas");
       const offCtx = offscreen.getContext("2d");
       if (!offCtx) return;
@@ -75,7 +83,11 @@ const FuzzyText = ({
       const xOffset = extraWidthBuffer / 2;
       offCtx.font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
       offCtx.textBaseline = "alphabetic";
-      offCtx.fillStyle = color;
+
+      // Lấy màu từ theme hoặc màu mặc định
+      const fillColor = getColorFromTheme();
+      offCtx.fillStyle = fillColor;
+
       offCtx.fillText(text, xOffset - actualLeft, actualAscent);
 
       const horizontalMargin = 50;

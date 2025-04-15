@@ -21,6 +21,7 @@ export default function AdminLayout() {
           <li><a href="/admin/dashboard">Dashboard</a></li>
           <li><a href="/admin/category">Category</a> </li>
           <li><a href="/admin/users">Users</a></li>
+          <li><a href='/admin/products'>Product</a></li>
         </ul>
       </aside>
       <main className="flex-1 p-6">

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal";
+import DeleteModal from "../../components/Modal/DeleteModal";
+
 import {
   Spinner,
   Card,
@@ -248,7 +250,7 @@ export default function CategoryManagement() {
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
               placeholder="Nhập tên danh mục"
-              isInvalid={addName !== "" } // Kiểm tra độ dài tên danh mục
+              isInvalid={addName !== ""} // Kiểm tra độ dài tên danh mục
               errorMessage="Tên danh mục phải có ít nhất 3 ký tự"
             />
           </ModalBody>
@@ -287,25 +289,13 @@ export default function CategoryManagement() {
       </Modal>
 
       {/* Modal cho "Xóa" */}
-      <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
-        <ModalContent>
-          <ModalHeader>Xác nhận xóa</ModalHeader>
-          <ModalBody>
-            <p>
-              Bạn có chắc muốn xóa danh mục{" "}
-              <strong>{selectedItem?.name}</strong> không?
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setDeleteModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button color="danger" onPress={handleConfirmDelete}>
-              Xóa
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        itemName={selectedItem?.name}
+        onDelete={handleConfirmDelete} // Thêm hàm xóa vào props
+      />
+
 
       <h1 className="text-2xl font-semibold mb-4">Quản lý danh mục</h1>
 
@@ -321,23 +311,18 @@ export default function CategoryManagement() {
         columns={columns}
       />
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner size="lg" />
-        </div>
-      ) : (
-        <TableComponent
-          items={categories} // Sử dụng categories trực tiếp từ store
-          columns={columns}
-          page={page}
-          setPage={setPage}
-          limit={limit}
-          totalPages={totalPages}
-          visibleColumns={visibleColumns}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
+      <TableComponent
+        items={categories} // Sử dụng categories trực tiếp từ store
+        columns={columns}
+        page={page}
+        setPage={setPage}
+        limit={limit}
+        totalPages={totalPages}
+        visibleColumns={visibleColumns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

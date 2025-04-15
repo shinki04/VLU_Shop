@@ -31,7 +31,7 @@ import {
   User,
   Avatar,
 } from "@heroui/react";
-import CustomModal from "../components/CustomModal";
+import CustomModal from "../components/Modal/CustomModal";
 
 export default function HomePage() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen

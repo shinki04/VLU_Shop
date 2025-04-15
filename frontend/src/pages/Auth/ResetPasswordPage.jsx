@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { PasswordCriteria } from "../../components/PasswordStrengthMeter";
 import React from "react";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal.jsx";
 import {
   Modal,
   ModalContent,

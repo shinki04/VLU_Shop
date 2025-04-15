@@ -1,7 +1,10 @@
 import useUserStore from "../../store/userStore";
 import React, { useEffect, useState, useMemo } from "react";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal.jsx";
 import { PasswordCriteria } from "../../components/PasswordStrengthMeter";
+import DeleteModal from "../../components/Modal/DeleteModal.jsx";
+import ImagePreviewSection from "../../components/ImagePreviewSection";
+
 import {
   Spinner,
   Input,
@@ -48,7 +51,6 @@ export default function UserManagement() {
     users,
     fetchUsers,
     searchUsersByKeyword,
-    addUser,
     updateUser,
     deleteUser,
     isLoading,
@@ -145,7 +147,7 @@ export default function UserManagement() {
   };
 
   const handleAddUser = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     // const imageUrl = !addImage
     //   ? await uploadImage(defaultImage)
     //   : await uploadImage(addImage);
@@ -178,14 +180,14 @@ export default function UserManagement() {
     } catch (err) {
       toastCustom({
         title: "Error",
-        error: error || "Error adding user",
+        error: error || err.message || "Error adding user",
       });
     }
   };
 
   const handleUpdateUser = async (e) => {
     if (selectedItem) {
-      e.preventDefault()
+      e.preventDefault();
       try {
         // Giữ lại URL cũ nếu không thay đổi
         let imageUrl = selectedItem.image;
@@ -234,9 +236,7 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async () => {
-    
     try {
-    
       await deleteUser(selectedItem._id);
 
       toastCustom({
@@ -352,9 +352,9 @@ export default function UserManagement() {
             </p>
           </ModalHeader>
           <ModalBody>
-            <div className="flex flex-col md:flex-row gap-8 w-full">
-              <div className="md:flex md:basis-5/12 w-full items-center">
-                <Image
+            <div className="w-full flex flex-col md:flex-row gap-4">
+              {/* <div className="md:flex md:basis-5/12 w-full items-center">
+                {/* <Image
                   alt="User Image"
                   src={`${import.meta.env.DEV ? "http://localhost:3000" : ""}${
                     Array.isArray(editImage) ? editImage[0] : editImage
@@ -362,9 +362,9 @@ export default function UserManagement() {
                   isZoomed
                   className="block w-full h-auto object-cover "
                   loading="lazy"
-                />
-              </div>
-              <div className="md:basis-7/12 w-full">
+                /> */}
+              {/* </div> */}
+              <div className="w-full">
                 <Form
                   encType="multipart/form-data"
                   className="space-y-4"
@@ -418,15 +418,20 @@ export default function UserManagement() {
                     ))}
                   </Select>
 
-                  <Input
+                  {/* <Input
                     label="Ảnh người dùng"
                     type="file"
                     onChange={(e) => setEditImage(e.target.files[0])}
+                  /> */}
+                  <ImagePreviewSection editImage={editImage} 
+                  setEditImage={setEditImage} 
+                  isArray={false}
                   />
                   <div className="flex flex-row grap-2">
                     <Button
                       variant="flat"
                       onPress={() => setEditModalOpen(false)}
+                      
                     >
                       Hủy
                     </Button>
@@ -447,25 +452,12 @@ export default function UserManagement() {
       </Modal>
 
       {/* Modal cho "Xóa" */}
-      <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
-        <ModalContent>
-          <ModalHeader>Xác nhận xóa</ModalHeader>
-          <ModalBody>
-            <p>
-              Bạn có chắc muốn xóa người dùng{" "}
-              <strong>{selectedItem?.username}</strong> không?
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setDeleteModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button color="danger" onPress={handleDeleteUser}>
-              Xóa
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        onDelete={handleDeleteUser}
+        itemName={selectedItem?.username}
+      />
 
       <h1 className="text-2xl font-semibold mb-4">Quản lý người dùng</h1>
 
@@ -480,11 +472,7 @@ export default function UserManagement() {
         columns={columns}
         onAddNew={setAddModalOpen}
       />
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner size="lg" />
-        </div>
-      ) : (
+     
         <TableComponent
           items={users}
           columns={columns}
@@ -506,8 +494,9 @@ export default function UserManagement() {
             setSelectedItem(user);
             setDeleteModalOpen(true);
           }}
+          isLoading={isLoading}
         />
-      )}
+     
     </div>
   );
 }

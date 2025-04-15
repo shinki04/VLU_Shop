@@ -10,7 +10,7 @@ export const toastCustom = ({ color, error, title, description, ...props }) => {
       icon: "w-6 h-6",
     },
     closeIcon: <X size={16} strokeWidth={0.75} absoluteStrokeWidth />,
-    // variant:"solid",
+    variant: "flat",
     ...props,
   };
 
@@ -23,7 +23,7 @@ export const toastCustom = ({ color, error, title, description, ...props }) => {
       }
     : {
         color: color || "success",
-        title: title || "Successfully",
+        title: title || "Successful",
         description,
         ...baseOptions,
       };

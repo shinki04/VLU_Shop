@@ -6,6 +6,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Spinner,
   Button,
   Chip,
 } from "@heroui/react";
@@ -72,6 +73,7 @@ export const TableComponent = ({
   renderCell, // Hàm tùy chỉnh để render ô (tùy chọn)
   onEdit, // Callback khi nhấn "Sửa"
   onDelete, // Callback khi nhấn "Xóa"
+  isLoading, // Trạng thái loading
 }) => {
   // Lọc cột hiển thị dựa trên visibleColumns
   const headerColumns = columns.filter(
@@ -127,6 +129,25 @@ export const TableComponent = ({
           />
         );
       }
+      case "images": {
+        const imageUrl = Array.isArray(item.images)
+          ? item.images[0]
+          : item.images;
+        const baseUrl =
+          import.meta.env.NODE_ENV === "production"
+            ? ""
+            : "http://localhost:3000";
+        const fullImageUrl = `${baseUrl}${imageUrl}`;
+
+        return (
+          <img
+            src={fullImageUrl}
+            alt="image"
+            loading="lazy"
+            style={{ width: "50px", height: "50px", objectFit: "cover" }}
+          />
+        );
+      }
       case "role":
         return (
           <Chip
@@ -160,39 +181,47 @@ export const TableComponent = ({
   const cellRenderer = renderCell || defaultRenderCell;
 
   return (
-    <Table
-      isHeaderSticky
-      aria-label="Generic Table"
-      color="secondary"
-      bottomContent={
-        totalPages > 0 && (
-          <PaginationControls
-            page={page}
-            setPage={setPage}
-            totalPages={totalPages}
-          />
-        )
-      }
-      bottomContentPlacement="outside"
-    >
-      <TableHeader columns={headerColumns}>
-        {(column) => (
-          <TableColumn key={column.uid} align="start">
-            {column.name}
-          </TableColumn>
-        )}
-      </TableHeader>
-      <TableBody emptyContent={"Không tìm thấy dữ liệu"}>
-        {items.map((item, index) => (
-          <TableRow key={item.id || index}>
-            {headerColumns.map((column) => (
-              <TableCell key={column.uid}>
-                {cellRenderer(item, column.uid, index)}
-              </TableCell>
+    <>
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Spinner variant="gradient" color="secondary" size="lg" />
+        </div>
+      ) : (
+        <Table
+          isHeaderSticky
+          aria-label="Generic Table"
+          color="secondary"
+          bottomContent={
+            totalPages > 0 && (
+              <PaginationControls
+                page={page}
+                setPage={setPage}
+                totalPages={totalPages}
+              />
+            )
+          }
+          bottomContentPlacement="outside"
+        >
+          <TableHeader columns={headerColumns}>
+            {(column) => (
+              <TableColumn key={column.uid} align="start">
+                {column.name}
+              </TableColumn>
+            )}
+          </TableHeader>
+          <TableBody emptyContent={"Không tìm thấy dữ liệu"}>
+            {items.map((item, index) => (
+              <TableRow key={item.id || index}>
+                {headerColumns.map((column) => (
+                  <TableCell key={column.uid}>
+                    {cellRenderer(item, column.uid, index)}
+                  </TableCell>
+                ))}
+              </TableRow>
             ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+          </TableBody>
+        </Table>
+      )}
+    </>
   );
 };
