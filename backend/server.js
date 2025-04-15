@@ -11,7 +11,7 @@ import userRoutes from "./routes/userRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js"; // Import routes for reviews
-// import cartRoutes from "./routes/cartRoutes.js"; // Import routes for giỏ hàng
+import cartRoutes from "./routes/cartRoutes.js"; // Import routes for giỏ hàng
 dotenv.config();
 const app = express();
 connectDB();
@@ -51,7 +51,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/products", productRoutes); 
 app.use("/api/reviews", reviewRoutes); // Đường dẫn cho reviews
-// app.use("/api/cart", cartRoutes); // Đường dẫn cho giỏ hàng
+app.use("/api/cart", cartRoutes); // Đường dẫn cho giỏ hàng
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

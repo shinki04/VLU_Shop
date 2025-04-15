@@ -111,12 +111,18 @@ const listCategory = async (req, res) => {
     const limit = parseInt(req.query.limit) || 5; // Mặc định mỗi trang 5 danh mục
     // Tính số mục cần bỏ qua (skip)
     const skip = (page - 1) * limit;
-
+    const sortBy = req.query.sortBy;
+    const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
     // Lấy tổng số danh mục
     const total = await Category.countDocuments();
+    // Tạo object sortOptions
+    const sortOptions = sortBy ? { [sortBy]: sortOrder } : { createdAt: -1 };
 
     // Lấy danh mục theo trang
-    const categories = await Category.find().skip(skip).limit(limit);
+    const categories = await Category.find()
+      .skip(skip)
+      .limit(limit)
+      .sort(sortOptions);
     // .sort({ name: 1 }); // Sắp xếp theo tên tăng dần (tuỳ chọn)
 
     // const all = await Category.find({});
