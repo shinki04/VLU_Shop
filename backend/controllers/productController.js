@@ -236,7 +236,7 @@ export const fetchAllProducts = asyncHandler(async (req, res) => {
 });
 export const filterProducts = asyncHandler(async (req, res) => {
   // Lấy các tham số từ req.query (hoặc req.body nếu bạn dùng POST)
-  const { checked, priceRange, search, page = 1, limit = 12 } = req.query;
+  const { checked, priceRange, search, page = 1, limit = 10 } = req.query;
 
   let args = {};
 
@@ -326,7 +326,7 @@ export const fetchNewProducts = asyncHandler(async (req, res) => {
   try {
     const products = await Product.find()
       .sort({ updatedAt: -1 })
-      .limit(5)
+      .limit(10)
       .populate("reviews") 
       .populate("category");
     res.status(200).json({
