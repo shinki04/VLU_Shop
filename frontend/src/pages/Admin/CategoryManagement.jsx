@@ -116,6 +116,7 @@ export default function CategoryManagement() {
     []
   );
 
+
   const handleCloseModal = () => {
     clearError();
   };
@@ -230,6 +231,10 @@ export default function CategoryManagement() {
     }
   };
 
+  const handleSort = async (sortKey, sortOrder) => {
+    await fetchCategories(page, limit, sortKey, sortOrder);
+  };
+
   return (
     <div className="p-6">
       <CustomModal
@@ -322,6 +327,7 @@ export default function CategoryManagement() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         isLoading={isLoading}
+        onSort={handleSort} // Thêm hàm sắp xếp vào props
       />
     </div>
   );

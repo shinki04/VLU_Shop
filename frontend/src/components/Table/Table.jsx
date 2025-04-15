@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableHeader,
@@ -12,22 +12,9 @@ import {
 } from "@heroui/react";
 import { PaginationControls } from "../../components/Pagination/PaginationControls";
 import { UserRoundX, UserRoundCheck } from "lucide-react";
+
 // Icon tùy chỉnh cho "Sửa" (bút chì)
 const EditIcon = ({ size = 20 }) => (
-  // <svg
-  //   width={size}
-  //   height={size}
-  //   viewBox="0 0 24 24"
-  //   fill="none"
-  //   stroke="currentColor"
-  //   strokeWidth="2"
-  //   strokeLinecap="round"
-  //   strokeLinejoin="round"
-  // >
-  //   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-  //   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  // </svg>
-
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -35,10 +22,10 @@ const EditIcon = ({ size = 20 }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="lucide lucide-pencil-icon lucide-pencil"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="lucide lucide-pencil-icon lucide-pencil"
   >
     <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
     <path d="m15 5 4 4" />
@@ -62,6 +49,27 @@ const DeleteIcon = ({ size = 20 }) => (
   </svg>
 );
 
+// Icon cho trạng thái sắp xếp
+const SortIcon = ({ sortOrder, isActive }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ marginLeft: "4px", opacity: isActive ? 1 : 0.5 }}
+  >
+    {sortOrder === "asc" ? (
+      <path d="M12 5v14M5 12l7-7 7 7" />
+    ) : (
+      <path d="M12 5v14M5 12l7 7 7-7" />
+    )}
+  </svg>
+);
+
 export const TableComponent = ({
   items, // Dữ liệu để hiển thị (mảng bất kỳ)
   columns, // Danh sách cột (name, uid, và các thuộc tính khác nếu cần)
@@ -74,12 +82,70 @@ export const TableComponent = ({
   onEdit, // Callback khi nhấn "Sửa"
   onDelete, // Callback khi nhấn "Xóa"
   isLoading, // Trạng thái loading
+  onSort, // Callback khi sắp xếp (mới)
 }) => {
+  // State để quản lý cột sắp xếp và hướng sắp xếp
+  const [sortState, setSortState] = useState({
+    sortKey: null,
+    sortOrder: "asc",
+  });
+
   // Lọc cột hiển thị dựa trên visibleColumns
   const headerColumns = columns.filter(
     (column) => column.uid === "actions" || visibleColumns.has(column.uid)
   );
 
+  // Hàm xử lý click vào header để sắp xếp
+  const handleSort = (columnUid) => {
+    // Không cho phép sắp xếp cột actions hoặc index
+    if (columnUid === "actions" || columnUid === "index") return;
+
+    const newSortOrder =
+      sortState.sortKey === columnUid && sortState.sortOrder === "asc"
+        ? "desc"
+        : "asc";
+
+    setSortState({
+      sortKey: columnUid,
+      sortOrder: newSortOrder,
+    });
+
+    // Gọi hàm onSort từ props (nếu có)
+    if (onSort) {
+      onSort(columnUid, newSortOrder);
+    }
+  };
+
+  // const handleSort = (columnUid) => {
+  //   if (columnUid === "actions" || columnUid === "index") return;
+  
+  //   const newSortOrder =
+  //     sortState.sortKey === columnUid && sortState.sortOrder === "asc"
+  //       ? "desc"
+  //       : "asc";
+  
+  //   setSortState({
+  //     sortKey: columnUid,
+  //     sortOrder: newSortOrder,
+  //   });
+  
+  //   const newSortedItems = [...sortedItems].sort((a, b) => {
+  //     let aValue = a[columnUid];
+  //     let bValue = b[columnUid];
+  
+  //     // Xử lý trường hợp đặc biệt
+  //     if (columnUid === "role") {
+  //       aValue = aValue || "";
+  //       bValue = bValue || "";
+  //     }
+  
+  //     if (aValue < bValue) return newSortOrder === "asc" ? -1 : 1;
+  //     if (aValue > bValue) return newSortOrder === "asc" ? 1 : -1;
+  //     return 0;
+  //   });
+  //   setSortedItems(newSortedItems);
+  // };
+  
   // Hàm render mặc định nếu không truyền renderCell
   const defaultRenderCell = (item, columnKey, index) => {
     if (columnKey === "index") {
@@ -151,7 +217,7 @@ export const TableComponent = ({
       case "role":
         return (
           <Chip
-            className="lg:min-w-20 text-center leading-3	"
+            className="lg:min-w-20 text-center leading-3"
             color={item.role === "admin" ? "secondary" : "default"}
           >
             {item.role}
@@ -162,7 +228,6 @@ export const TableComponent = ({
           <Chip
             className="text-center font-extralight"
             color={item.isVerified ? "success" : "warning"}
-            // endContent={item.isVerified ? <UserRoundCheck /> : <UserRoundX />}
           >
             {item.isVerified ? (
               <UserRoundCheck strokeWidth={1.25} color="#ffffff" />
@@ -204,8 +269,25 @@ export const TableComponent = ({
         >
           <TableHeader columns={headerColumns}>
             {(column) => (
-              <TableColumn key={column.uid} align="start">
-                {column.name}
+              <TableColumn
+                key={column.uid}
+                align="start"
+                onClick={() => handleSort(column.uid)}
+                style={{ cursor: column.uid !== "actions" ? "pointer" : "default" }}
+              >
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  {column.name}
+                  {column.uid !== "actions" && (
+                    <SortIcon
+                      sortOrder={
+                        sortState.sortKey === column.uid
+                          ? sortState.sortOrder
+                          : "asc"
+                      }
+                      isActive={sortState.sortKey === column.uid}
+                    />
+                  )}
+                </div>
               </TableColumn>
             )}
           </TableHeader>

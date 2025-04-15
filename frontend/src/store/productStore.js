@@ -15,6 +15,8 @@ const useProductStore = create((set) => ({
   total: 0,
   page: 1,
   limit: 5,
+  sortBy: null,
+  sortOrder: "desc",
 
   clearError: () => set({ error: null }),
 
@@ -105,11 +107,19 @@ const useProductStore = create((set) => ({
   },
 
   // Lọc sản phẩm
-  filterProducts: async (filters) => {
+  filterProducts: async (
+    filters,
+    checked,
+    sortBy = null,
+    sortOrder = "desc"
+  ) => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${PRODUCT_API}/filter`, {
         params: filters,
+        checked,
+        sortBy,
+        sortOrder,
       });
       set({ products: response.data.products, isLoading: false });
     } catch (error) {

@@ -3,6 +3,8 @@ import useProductStore from "../../store/productStore";
 import CustomModal from "../../components/Modal/CustomModal";
 import DeleteModal from "../../components/Modal/DeleteModal";
 import ImagePreviewSection from "../../components/ImagePreviewSection";
+import useCategoryStore from "../../store/categoryStore";
+
 import {
   Spinner,
   Input,
@@ -51,13 +53,29 @@ export default function ProductManagement() {
     addProduct,
     updateProduct,
     removeProduct,
-    isLoading,
+
     fetchProductById,
     filterProducts,
-    error,
-    clearError,
-    total,
+
+    isLoading: isProductLoading,
+    error: productError,
+    total: productTotal,
+    clearError: clearProductError,
   } = useProductStore();
+
+  const {
+    categories,
+    isLoading,
+    error,
+    total,
+    fetchCategories,
+    searchCategoryByKeyword,
+    isLoading: isCategoryLoading,
+    error: categoryError,
+    total: categoryTotal,
+    clearError: clearCategoryError,
+  } = useCategoryStore();
+
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const [page, setPage] = useState(1);
@@ -67,6 +85,7 @@ export default function ProductManagement() {
   );
   const [inputValue, setInputValue] = useState("");
   const [filterValue, setFilterValue] = useState("");
+  const [searchCategory, setSearchCategory] = useState("");
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -75,7 +94,13 @@ export default function ProductManagement() {
   const [selectedItem, setSelectedItem] = useState(null);
 
   // Dữ liệu cho modal Thêm
-
+  const [addName, setAddName] = useState("");
+  const [addDescription, setAddDescription] = useState("");
+  const [addPrice, setAddPrice] = useState("");
+  const [addImages, setAddImages] = useState(null); // Thêm ảnh cho người dùng mới
+  const [addCategory, setAddCategory] = useState("");
+  const [addCountInStock, setAddCountInStock] = useState(false);
+  const [addBrand, setAddBrand] = useState("");
   // Dữ liệu cho modal Sửa
 
   // Hiển thị lỗi nếu có
@@ -84,7 +109,7 @@ export default function ProductManagement() {
       onOpen();
       console.log(error);
     }
-  }, [error, onOpen, clearError]);
+  }, [error, onOpen]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,7 +124,12 @@ export default function ProductManagement() {
       }
     };
     fetchData();
-  }, [page, limit, filterValue]);
+  }, [page, limit, filterValue,fetchAllProducts, filterProducts]);
+
+  // Fetch categories khi mount
+  useEffect(() => {
+    fetchCategories(1, 100);
+  }, [fetchCategories]);
 
   const debouncedSetFilterValue = useMemo(
     () => debounce((value) => setFilterValue(value), 200),
@@ -148,6 +178,9 @@ export default function ProductManagement() {
     }
   };
 
+  const handleSort = async (sortKey, sortOrder) => {
+    await fetchAllProducts(page, limit, sortKey, sortOrder);
+  };
   return (
     <div>
       <CustomModal
@@ -157,6 +190,85 @@ export default function ProductManagement() {
         message={error}
       />
       {/* Modal cho "Thêm" */}
+      <Modal
+        size="full"
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+      >
+        <ModalContent>
+          <ModalHeader>Thêm sản phẩm</ModalHeader>
+          <ModalBody>
+            <Form
+              encType="multipart/form-data"
+              className="space-y-4"
+              method="post"
+              onSubmit={handleAddUser}
+            >
+              <Input
+                label="Tên người dùng"
+                value={addUsername}
+                onChange={(e) => setAddUsername(e.target.value)}
+                placeholder="Nhập tên người dùng"
+              />
+              <Input
+                label="Email"
+                type="email"
+                isRequired
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                placeholder="Nhập email"
+              />
+              <CustomInputPass
+                isRequired
+                label="Mật khẩu"
+                value={addPassword}
+                onChange={(e) => {
+                  setAddPassword(e.target.value);
+                }}
+                // isInvalid={addPassword}
+                // errorMessage={addPassword}
+              />
+
+              <Select
+                isRequired
+                className="max-w-xs"
+                label="Role"
+                fullWidth
+                selectedKeys={[addRole]}
+                onSelectionChange={(keys) => setAddRole(Array.from(keys)[0])}
+              >
+                {["customer", "admin"].map((role) => (
+                  <SelectItem key={role}>{role}</SelectItem>
+                ))}
+              </Select>
+
+              <Select
+                isRequired
+                className="max-w-xs"
+                label="Đã xác thực ?"
+                fullWidth
+                selectedKeys={[addIsVerified ? "true" : "false"]}
+                onSelectionChange={(keys) => setAddIsVerified(keys.has("true"))}
+              >
+                {["true", "false"].map((addIsVerified) => (
+                  <SelectItem key={addIsVerified}>{addIsVerified}</SelectItem>
+                ))}
+              </Select>
+              <PasswordCriteria password={addPassword} />
+              <div className="flex flex-row gap-3">
+                <Button variant="flat" onPress={() => setAddModalOpen(false)}>
+                  Hủy
+                </Button>
+                <Button color="primary" type="submit">
+                  Lưu
+                </Button>
+              </div>
+            </Form>
+          </ModalBody>
+          <ModalFooter></ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Modal cho "Sửa" */}
       {/* Modal cho "Xóa" */}
       <DeleteModal
@@ -189,6 +301,7 @@ export default function ProductManagement() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         isLoading={isLoading}
+        onSort={handleSort}
       />
     </div>
   );

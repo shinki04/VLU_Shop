@@ -16,14 +16,21 @@ const useCategoryStore = create(
       total: 0,
       page: 1,
       limit: 5,
+      sortBy: null,
+      sortOrder: "desc",
 
       clearError: () => set({ error: null }),
 
-      fetchCategories: async (page = 1, limit = 5) => {
+      fetchCategories: async (
+        page = 1,
+        limit = 5,
+        sortBy = null,
+        sortOrder = "desc"
+      ) => {
         set({ isLoading: true, error: null });
         try {
           const res = await axios.get(`${CATEGORY_URL}/categories`, {
-            params: { page, limit },
+            params: { page, limit, sortBy, sortOrder },
           });
 
           set({
