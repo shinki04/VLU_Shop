@@ -1,18 +1,19 @@
-import { create } from 'zustand';
-import axios from 'axios';
+import { create } from "zustand";
+import axios, { all } from "axios";
 
 const REVIEW_API =
-  import.meta.env.MODE === 'development'
-    ? 'http://localhost:3000/api/reviews'
-    : '/api/reviews';
+  import.meta.env.MODE === "development"
+    ? "http://localhost:3000/api/reviews"
+    : "/api/reviews";
 
 // Ensure axios sends cookies with requests
 axios.defaults.withCredentials = true;
 
-const useReviewStore = create((set) => ({
+const useReviewStore = create((set, get) => ({
   reviews: [],
   userReviews: [],
   allReviews: [],
+  searchedProducts: [],
   isLoading: false,
   error: null,
   message: null,
@@ -27,11 +28,22 @@ const useReviewStore = create((set) => ({
   addReview: async (productId, reviewData) => {
     set({ isLoading: true, error: null, message: null });
     try {
-      const response = await axios.post(`${REVIEW_API}/${productId}`, reviewData);
-      set({ message: response.data.message, isLoading: false });
+      const response = await axios.post(
+        `${REVIEW_API}/${productId}`,
+        reviewData
+      );
+      set({
+        reviews: response.data.review,
+        userReviews: response.data.review,
+        allReviews: response.data.reviews,
+        totalReviews: response.data.numReviews,
+
+        message: "Thêm đánh giá thành công",
+        isLoading: false,
+      });
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Error adding review',
+        error: error.response?.data?.message || "Lỗi khi thêm đánh giá",
         isLoading: false,
       });
       throw error;
@@ -42,20 +54,27 @@ const useReviewStore = create((set) => ({
   updateReview: async (productId, reviewData) => {
     set({ isLoading: true, error: null, message: null });
     try {
-      const response = await axios.put(`${REVIEW_API}/${productId}`, reviewData);
+      const response = await axios.put(
+        `${REVIEW_API}/${productId}`,
+        reviewData
+      );
       set({
         reviews: response.data.review
-          ? [
-              ...useReviewStore.getState().reviews.filter((r) => r._id !== response.data.review._id),
-              response.data.review,
-            ]
-          : useReviewStore.getState().reviews,
-        message: response.data.message,
+          ? get().reviews.map((r) =>
+              r._id === response.data.review._id ? response.data.review : r
+            )
+          : get().reviews,
+        userReviews: response.data.review
+          ? get().userReviews.map((r) =>
+              r._id === response.data.review._id ? response.data.review : r
+            )
+          : get().userReviews,
+        message: "Cập nhật đánh giá thành công",
         isLoading: false,
       });
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Error updating review',
+        error: error.response?.data?.message || "Lỗi khi cập nhật đánh giá",
         isLoading: false,
       });
       throw error;
@@ -74,7 +93,7 @@ const useReviewStore = create((set) => ({
       });
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Error fetching product reviews',
+        error: error.response?.data?.message || "Lỗi khi lấy đánh giá sản phẩm",
         isLoading: false,
       });
       throw error;
@@ -87,14 +106,14 @@ const useReviewStore = create((set) => ({
     try {
       const response = await axios.delete(`${REVIEW_API}/${productId}`);
       set({
-        reviews: useReviewStore.getState().reviews.filter((r) => r.product !== productId),
-        userReviews: useReviewStore.getState().userReviews.filter((r) => r.product !== productId),
-        message: response.data.message,
+        reviews: get().reviews.filter((r) => r.product !== productId),
+        userReviews: get().userReviews.filter((r) => r.product !== productId),
+        message: "Xóa đánh giá thành công",
         isLoading: false,
       });
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Error deleting review',
+        error: error.response?.data?.message || "Lỗi khi xóa đánh giá",
         isLoading: false,
       });
       throw error;
@@ -117,7 +136,9 @@ const useReviewStore = create((set) => ({
       });
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Error fetching user reviews',
+        error:
+          error.response?.data?.message ||
+          "Lỗi khi lấy đánh giá của người dùng",
         isLoading: false,
       });
       throw error;
@@ -125,7 +146,7 @@ const useReviewStore = create((set) => ({
   },
 
   // Get all reviews (admin or general use) with optional keyword search
-  getAllReviews: async (page = 1, limit = 10, keyword = '') => {
+  getAllReviews: async (page = 1, limit = 10, keyword = "") => {
     set({ isLoading: true, error: null, message: null });
     try {
       const response = await axios.get(`${REVIEW_API}`, {
@@ -140,12 +161,54 @@ const useReviewStore = create((set) => ({
       });
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Error fetching all reviews',
+        error: error.response?.data?.message || "Lỗi khi lấy tất cả đánh giá",
         isLoading: false,
       });
       throw error;
     }
   },
+
+  // Search products with average rating
+  searchProductsWithAvgRating: async ({
+    productIds,
+    ratingRange = "0,5", // Chuỗi "min,max"
+    keyword,
+    page = 1,
+    limit = 10,
+    sortKey = "",
+    sortOrder = "asc",
+  }) => {
+    set({ isLoading: true, error: null, message: null });
+    try {
+      const response = await axios.get(`${REVIEW_API}/filter`, {
+        params: {
+          productids: productIds?.join(","), // Chuyển đổi mảng thành chuỗi
+          ratingRange, // Gửi trực tiếp chuỗi "min,max"
+          keyword,
+          page,
+          limit,
+          sortKey,
+          sortOrder,
+        },
+      });
+      set({
+        searchedProducts: response.data.products,
+        totalReviews: response.data.totalProducts,
+        totalPages: response.data.totalPages,
+        currentPage: response.data.currentPage,
+        isLoading: false,
+        
+      });
+      return response.data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Lỗi khi tìm kiếm sản phẩm",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
 }));
 
 export default useReviewStore;

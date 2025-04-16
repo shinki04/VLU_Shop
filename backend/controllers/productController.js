@@ -234,6 +234,7 @@ export const fetchAllProducts = asyncHandler(async (req, res) => {
     });
   }
 });
+
 export const filterProducts = asyncHandler(async (req, res) => {
   // Lấy các tham số từ req.query (hoặc req.body nếu bạn dùng POST)
   const {

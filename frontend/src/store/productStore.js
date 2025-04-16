@@ -147,7 +147,13 @@ const useProductStore = create((set) => ({
           priceRange, // Truyền giá trị `priceRange` cho bộ lọc
         },
       });
-      set({ products: response.data.products, isLoading: false });
+      set({ products: response.data.products,
+        totalProducts: response.data.totalProducts,
+        page: response.data.page,
+        limit: response.data.limit,
+        sortBy: response.data.sortBy,
+        sortOrder: response.data.sortOrder,        
+        isLoading: false });
     } catch (error) {
       set({
         isLoading: false,

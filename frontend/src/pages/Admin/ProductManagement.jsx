@@ -28,15 +28,15 @@ import {
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
-import { debounce, sortBy } from "lodash";
+import { debounce } from "lodash";
 
 const columns = [
   { name: "STT", uid: "index" },
-  { name: "Tên sản phẩm", uid: "name" },
+  { name: "Tên sản phẩm", uid: "name", sortable: true },
   { name: "Ảnh", uid: "images" },
-  { name: "Giá", uid: "price" },
-  { name: "Danh mục", uid: "category" },
-  { name: "Tồn kho", uid: "countInStock" },
+  { name: "Giá", uid: "price", sortable: true },
+  { name: "Danh mục", uid: "category", sortable: true },
+  { name: "Tồn kho", uid: "countInStock", sortable: true },
   { name: "Mô tả", uid: "description" },
   { name: "Hành động", uid: "actions" },
 ];
@@ -78,22 +78,24 @@ export default function ProductManagement() {
   const [visibleColumns, setVisibleColumns] = useState(
     new Set(INITIAL_VISIBLE_COLUMNS)
   );
-  const [sortBy, setSortBy] = useState(null);
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortKey, setSortKey] = useState(null); // Không sắp xếp mặc định
+  const [sortOrder, setSortOrder] = useState("asc");
   const [errorMess, setErrorMess] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [searchValue, setSearchValue] = useState("");
-  const totalPages = useMemo(
-    () => Math.ceil(totalProducts / limit),
-    [totalProducts, limit]
-  );
+  const [selectedCategories, setSelectedCategories] = useState(new Set());
+  const [priceRange, setPriceRange] = useState([0, 999999999]);
+
+  // Tính tổng số trang
+  const totalPages = useMemo(() => {
+    const total = totalProducts || 0;
+    return Math.ceil(total / limit) || 1; // Đảm bảo ít nhất 1 trang
+  }, [totalProducts, limit]);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [selectedCategories, setSelectedCategories] = useState(new Set()); // Nhiều category
-  const [priceRange, setPriceRange] = useState([0, 999999999]); // Thanh kéo giá [min, max]
 
   // Dữ liệu cho modal Thêm
   const [addName, setAddName] = useState("");
@@ -115,12 +117,13 @@ export default function ProductManagement() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
+  // Xác định ID danh mục được chọn cho modal sửa
   const selectedCategoryId =
     editCategory && categories.some((cat) => cat._id === editCategory)
       ? editCategory
-      : products?.category?._id &&
-        categories.some((cat) => cat._id === products.category._id)
-      ? products.category._id
+      : selectedItem?.category?._id &&
+        categories.some((cat) => cat._id === selectedItem.category._id)
+      ? selectedItem.category._id
       : null;
 
   // Lấy danh mục khi component mount
@@ -129,65 +132,43 @@ export default function ProductManagement() {
       try {
         await fetchCategories(1, 100); // Lấy tối đa 100 danh mục
       } catch (err) {
-        console.error("Error fetching categories:", err);
+        console.error("Lỗi khi lấy danh mục:", err);
+        setErrorMess(err.message || "Lỗi khi lấy danh mục");
       }
     };
     loadCategories();
   }, [fetchCategories]);
 
-  // Hiển thị lỗi nếu có (từ product hoặc category store)
-  useEffect(() => {
-    if (productError || categoryError || errorMess) {
-      onOpen();
-    }
-  }, [productError, categoryError, onOpen, errorMess]);
-
-  useEffect(() => {
-    if (!isOpen && errorMess) {
-      console.log("Modal closed. Clearing error message.");
-      setErrorMess("");
-    }
-  }, [isOpen]);
-  // Lấy dữ liệu sản phẩm
+  // Lấy sản phẩm khi page, limit, bộ lọc hoặc sắp xếp thay đổi
   useEffect(() => {
     const fetchData = async () => {
       try {
         const checked = [...selectedCategories].join(",");
         const priceRangeStr = priceRange.join(",");
-
-        console.log("Filtering:", {
-          checked,
-          priceRange: priceRangeStr,
-          page,
-          limit,
-        });
-        console.log("totalPages", totalPages);
-        console.log("page", page);
-        console.log("limit", limit);
-        console.log("searchValue", searchValue);
-        console.log("total", totalProducts);
-        console.log("selectedCategories", selectedCategories);
-        console.log("priceRange", priceRangeStr);
+        // Chỉ gọi filterProducts nếu có bộ lọc hoặc sắp xếp
         if (
           searchValue ||
           selectedCategories.size > 0 ||
           priceRange[0] > 0 ||
-          priceRange[1] < 999999999
+          priceRange[1] < 999999999 ||
+          sortKey // Kiểm tra nếu có sắp xếp
         ) {
           await filterProducts(
             searchValue,
             checked,
             priceRangeStr,
-            sortBy,
+            sortKey || "createdAt", // Mặc định sắp xếp theo createdAt nếu không có sortKey
             sortOrder,
             limit,
             page
           );
         } else {
-          await fetchAllProducts(page, limit);
+          await fetchAllProducts(page, limit, sortKey, sortOrder);
         }
+        console.log("Dữ liệu đã lấy:", { page, limit, totalProducts, totalPages });
       } catch (err) {
-        console.error("Error fetching products:", err);
+        console.error("Lỗi khi lấy sản phẩm:", err);
+        setErrorMess(err.message || "Lỗi khi lấy sản phẩm");
       }
     };
     fetchData();
@@ -196,48 +177,87 @@ export default function ProductManagement() {
     limit,
     selectedCategories,
     priceRange,
+    searchValue,
+    sortKey,
+    sortOrder,
     fetchAllProducts,
     filterProducts,
-    searchValue,
-    sortBy,
-    sortOrder,
   ]);
 
+  // Hiển thị modal lỗi nếu có lỗi
+  useEffect(() => {
+    if (productError || categoryError || errorMess) {
+      onOpen();
+    }
+  }, [productError, categoryError, errorMess, onOpen]);
+
+  // Xóa thông báo lỗi khi đóng modal
+  useEffect(() => {
+    if (!isOpen && errorMess) {
+      setErrorMess("");
+    }
+  }, [isOpen]);
+
+  // Debounced tìm kiếm
   const debouncedSetFilterValue = useMemo(
     () => debounce((value) => setSearchValue(value), 200),
     []
   );
 
+  // Xử lý thay đổi input tìm kiếm
+  const handleInputChange = (value) => {
+    setInputValue(value);
+    setPage(1); // Reset về trang 1 khi tìm kiếm
+    debouncedSetFilterValue(value);
+  };
+
   // Xóa bộ lọc
   const clearFilters = () => {
     setSelectedCategories(new Set());
     setPriceRange([0, 999999999]);
+    setSearchValue("");
+    setInputValue("");
+    setSortKey(null); // Xóa trạng thái sắp xếp
+    setSortOrder("asc");
     setPage(1);
   };
 
-  const handleInputChange = (value) => {
-    setInputValue(value);
-    setPage(1); // Reset về trang đầu tiên mỗi khi tìm kiếm
-    debouncedSetFilterValue(value);
+  // Xử lý sắp xếp
+  const handleSort = async (newSortKey, newSortOrder) => {
+    try {
+      if (newSortKey !== sortKey || newSortOrder !== sortOrder) {
+        setSortKey(newSortKey);
+        setSortOrder(newSortOrder);
+        setPage(1); // Reset về trang 1
+        setLimit(5); // Đảm bảo limit nhất quán
+        const checked = [...selectedCategories].join(",");
+        const priceRangeStr = priceRange.join(",");
+        await filterProducts(
+          searchValue,
+          checked,
+          priceRangeStr,
+          newSortKey,
+          newSortOrder,
+          limit, // Sử dụng limit đã cập nhật
+          page // Sử dụng page đã cập nhật
+        );
+      }
+    } catch (err) {
+      setErrorMess(err.message || "Lỗi khi sắp xếp dữ liệu");
+    }
   };
 
+  // Xử lý thêm sản phẩm
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
-      console.log(addImages);
       if (addImages.length > 5) {
         setErrorMess("Sản phẩm chỉ được tối đa 5 ảnh!");
-        // throw new Error("Sản phẩm chỉ được tối đa 5 ảnh!");
         return;
       }
-      // Gọi hàm uploadProductImages để tải ảnh lên và nhận phản hồi
       const uploadResponse = await uploadProductImages(addImages);
-      console.log(uploadResponse);
+      const imageUrls = uploadResponse.map((image) => image.url);
 
-      // Lấy mảng URL ảnh từ phản hồi
-      const imageUrls = uploadResponse.map((image) => image.url); // Trích xuất các URL từ mảng ảnh
-
-      console.log(imageUrls);
       const productData = {
         name: addName,
         description: addDescription,
@@ -247,13 +267,12 @@ export default function ProductManagement() {
         brand: addBrand,
         images: imageUrls,
       };
-      console.log(productData);
 
       await addProduct(productData);
 
       toastCustom({
-        title: "Successfully",
-        description: "Product added successfully!",
+        title: "Thành công",
+        description: "Thêm sản phẩm thành công!",
       });
 
       setAddModalOpen(false);
@@ -265,177 +284,179 @@ export default function ProductManagement() {
       setAddBrand("");
       setAddImages([]);
 
-      // Refresh danh sách sản phẩm
-      await fetchAllProducts(page, limit);
+      // Làm mới danh sách sản phẩm với bộ lọc hiện tại
+      const checked = [...selectedCategories].join(",");
+      const priceRangeStr = priceRange.join(",");
+      if (
+        searchValue ||
+        selectedCategories.size > 0 ||
+        priceRange[0] > 0 ||
+        priceRange[1] < 999999999 ||
+        sortKey
+      ) {
+        await filterProducts(
+          searchValue,
+          checked,
+          priceRangeStr,
+          sortKey || "createdAt",
+          sortOrder,
+          limit,
+          page
+        );
+      } else {
+        await fetchAllProducts(page, limit, sortKey, sortOrder);
+      }
     } catch (err) {
       toastCustom({
-        title: "Error",
-        error: err.message || "Error adding product",
+        title: "Lỗi",
+        error: err.message || "Lỗi khi thêm sản phẩm",
       });
     }
   };
 
+  // Xử lý cập nhật sản phẩm
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
-    if (selectedItem) {
+    if (!selectedItem) {
+      toastCustom({
+        title: "Lỗi",
+        error: "Không có sản phẩm nào được chọn",
+      });
+      return;
+    }
+    try {
       if (editImages.length > 5) {
         setErrorMess("Sản phẩm chỉ được tối đa 5 ảnh!");
-        // throw new Error("Sản phẩm chỉ được tối đa 5 ảnh!");
         return;
       }
-      try {
-        const existingImages = selectedItem.images || [];
+      const existingImages = selectedItem.images || [];
+      const isNewImageAdded = editImages.some(
+        (img) => !existingImages.includes(img)
+      );
+      let finalImages = [...editImages];
 
-        // Check nếu có ảnh mới (ảnh trong editImages mà không có trong existingImages)
-        const isNewImageAdded = editImages.some(
-          (img) => !existingImages.includes(img)
-        );
-
-        let finalImages = [...editImages];
-
-        if (isNewImageAdded) {
-          // Tìm các ảnh mới (có thể là File hoặc blob URL nếu dùng input file)
-          const newImageFiles = editImages.filter(
-            (img) => typeof img !== "string"
-          );
-          console.log(newImageFiles);
-
-          if (newImageFiles.length > 0) {
-            const uploaded = await uploadProductImages(newImageFiles);
-            finalImages = [
-              ...editImages.filter((img) => typeof img === "string"),
-              ...uploaded.map((u) => u.url),
-            ];
-          }
+      if (isNewImageAdded) {
+        const newImageFiles = editImages.filter((img) => typeof img !== "string");
+        if (newImageFiles.length > 0) {
+          const uploaded = await uploadProductImages(newImageFiles);
+          finalImages = [
+            ...editImages.filter((img) => typeof img === "string"),
+            ...uploaded.map((u) => u.url),
+          ];
         }
-
-        console.log(editImages);
-        console.log(isNewImageAdded);
-        console.log(finalImages);
-
-        // const existingImages = selectedItem.images || [];
-
-        // console.log(editImages);
-        // console.log(selectedItem.images);
-        // console.log(existingImages);
-
-        // // Lọc ra ảnh mới (kiểu File) chưa có trong danh sách ảnh cũ (kiểu URL)
-        // const newImages = editImages.filter(
-        //   (img) => typeof img !== "string" && !existingImages.includes(img)
-        // );
-        // console.log(newImages);
-
-        // let uploadedImages = [];
-        // if (newImages.length > 0) {
-        //   uploadedImages = await uploadProductImages(newImages);
-        // }
-
-        // // Nếu người dùng đã chọn lại toàn bộ ảnh (tức là ảnh kiểu File), dùng ảnh mới
-        // // Nếu không có ảnh mới thì giữ ảnh cũ
-        // const finalImages =
-        //   uploadedImages.length > 0
-        //     ? uploadedImages.map((img) => img.url)
-        //     : existingImages;
-
-        // const uploadResponse = await uploadProductImages(editImages);
-        // console.log(uploadResponse);
-
-        //  // Nếu có ảnh mới, upload ảnh mới và lấy URL
-        // if (editImages.length > 0) {
-        //   const uploadedImages = await uploadProductImages(editImages);
-        //   console.log(uploadedImages);
-        // }
-
-        // const imageUrls = uploadResponse.map((image) => image.url); // Trích xuất các URL từ mảng ảnh
-        // const imageUrls = editImages.length > 0
-        // ? (await uploadProductImages(editImages)).map((image) => image.url)
-        // : selectedItem.images;
-
-        // Nếu không có ảnh mới, giữ nguyên ảnh cũ
-        // const existingImages = selectedItem.images || []; // Lấy ảnh cũ từ sản phẩm
-        // const editImages = imageUrls.length > 0 ? imageUrls : existingImages; // Nếu có ảnh mới, sử dụng ảnh mới, nếu không thì giữ nguyên ảnh cũ
-
-        const updatedData = {
-          name: editName,
-          description: editDescription,
-          price: parseFloat(editPrice),
-          category: editCategory,
-          countInStock: parseInt(editCountInStock),
-          brand: editBrand,
-          images: finalImages,
-        };
-        console.log(updatedData);
-
-        await updateProduct(selectedItem._id, updatedData);
-
-        toastCustom({
-          title: "Successfully",
-          description: "Product updated successfully!",
-        });
-
-        setEditModalOpen(false);
-        setEditName("");
-        setEditDescription("");
-        setEditPrice("");
-        setEditCategory("");
-        setEditCountInStock("");
-        setEditBrand("");
-        setEditImages([]);
-
-        // Refresh danh sách sản phẩm
-        await fetchAllProducts(page, limit);
-      } catch (err) {
-        toastCustom({
-          title: "Error",
-          error: err.message || "Error updating product",
-        });
       }
-    } else {
+
+      const updatedData = {
+        name: editName,
+        description: editDescription,
+        price: parseFloat(editPrice),
+        category: editCategory,
+        countInStock: parseInt(editCountInStock),
+        brand: editBrand,
+        images: finalImages,
+      };
+
+      await updateProduct(selectedItem._id, updatedData);
+
       toastCustom({
-        title: "No product",
-        error: "Error updating product",
+        title: "Thành công",
+        description: "Cập nhật sản phẩm thành công!",
+      });
+
+      setEditModalOpen(false);
+      setEditName("");
+      setEditDescription("");
+      setEditPrice("");
+      setEditCategory("");
+      setEditCountInStock("");
+      setEditBrand("");
+      setEditImages([]);
+      setSelectedItem(null);
+
+      // Làm mới danh sách sản phẩm với bộ lọc hiện tại
+      const checked = [...selectedCategories].join(",");
+      const priceRangeStr = priceRange.join(",");
+      if (
+        searchValue ||
+        selectedCategories.size > 0 ||
+        priceRange[0] > 0 ||
+        priceRange[1] < 999999999 ||
+        sortKey
+      ) {
+        await filterProducts(
+          searchValue,
+          checked,
+          priceRangeStr,
+          sortKey || "createdAt",
+          sortOrder,
+          limit,
+          page
+        );
+      } else {
+        await fetchAllProducts(page, limit, sortKey, sortOrder);
+      }
+    } catch (err) {
+      toastCustom({
+        title: "Lỗi",
+        error: err.message || "Lỗi khi cập nhật sản phẩm",
       });
     }
   };
 
+  // Xử lý xóa sản phẩm
   const handleDeleteProduct = async () => {
+    if (!selectedItem) return;
     try {
       await removeProduct(selectedItem._id);
 
       toastCustom({
-        title: "Successfully",
-        description: "Product deleted successfully!",
+        title: "Thành công",
+        description: "Xóa sản phẩm thành công!",
       });
 
       setDeleteModalOpen(false);
+      setSelectedItem(null);
 
-      // Refresh danh sách sản phẩm
-      await fetchAllProducts(page, limit);
+      // Làm mới danh sách sản phẩm với bộ lọc hiện tại
+      const checked = [...selectedCategories].join(",");
+      const priceRangeStr = priceRange.join(",");
+      if (
+        searchValue ||
+        selectedCategories.size > 0 ||
+        priceRange[0] > 0 ||
+        priceRange[1] < 999999999 ||
+        sortKey
+      ) {
+        await filterProducts(
+          searchValue,
+          checked,
+          priceRangeStr,
+          sortKey || "createdAt",
+          sortOrder,
+          limit,
+          page
+        );
+      } else {
+        await fetchAllProducts(page, limit, sortKey, sortOrder);
+      }
     } catch (err) {
       toastCustom({
-        title: "Error",
-        error: err.message || "Error deleting product",
+        title: "Lỗi",
+        error: err.message || "Lỗi khi xóa sản phẩm",
       });
     }
   };
 
-  const handleSort = async (sortBy, sortOrder) => {
-    setPage(1); // Reset về trang đầu khi sắp xếp
-    setLimit(10); // Reset về limit mặc định khi sắp xếp
-    // const search = ""; // Nếu có tìm kiếm thì giữ lại, nếu không thì để rỗng
-    // const checked = ""; // Nếu có lọc thì giữ lại, nếu không thì để rỗng
-    await filterProducts("", "", "", sortBy, sortOrder,limit, page);
-  };
   return (
-    <div className="">
+    <div className="p-6">
       <CustomModal
         isOpen={isOpen}
         onOpenChange={onOpenChange}
-        title="Oops!"
+        title="Lỗi!"
         message={productError || categoryError || errorMess}
       />
 
-      {/* Modal cho "Thêm" */}
+      {/* Modal cho Thêm */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <ModalContent>
           <ModalHeader>Thêm sản phẩm</ModalHeader>
@@ -473,7 +494,7 @@ export default function ProductManagement() {
                 className="max-w-xs"
                 label="Danh mục"
                 fullWidth
-                selectedKeys={[addCategory]}
+                selectedKeys={addCategory ? [addCategory] : []}
                 onSelectionChange={(keys) =>
                   setAddCategory(Array.from(keys)[0])
                 }
@@ -517,18 +538,15 @@ export default function ProductManagement() {
           <ModalFooter></ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Modal cho "Sửa" */}
+
+      {/* Modal cho Sửa */}
       <Modal
         size={"3xl"}
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
       >
         <ModalContent>
-          <ModalHeader id="editProduct">
-            <p className="flex flex-col gap-1 leading-relaxed">
-              Chỉnh sửa sản phẩm
-            </p>
-          </ModalHeader>
+          <ModalHeader id="editProduct">Chỉnh sửa sản phẩm</ModalHeader>
           <ModalBody>
             <div className="w-full flex flex-col md:flex-row gap-4">
               <div className="w-full">
@@ -565,9 +583,7 @@ export default function ProductManagement() {
                     className="max-w-xs"
                     label="Danh mục"
                     fullWidth
-                    selectedKeys={
-                      selectedCategoryId ? [selectedCategoryId] : []
-                    }
+                    selectedKeys={selectedCategoryId ? [selectedCategoryId] : []}
                     onSelectionChange={(keys) =>
                       setEditCategory(Array.from(keys)[0])
                     }
@@ -616,14 +632,17 @@ export default function ProductManagement() {
           <ModalFooter></ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Modal cho "Xóa" */}
+
+      {/* Modal cho Xóa */}
       <DeleteModal
         isOpen={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
         onDelete={handleDeleteProduct}
         itemName={selectedItem?.name}
       />
+
       <h1 className="text-2xl font-semibold mb-4">Quản lý sản phẩm</h1>
+
       <TopContent
         filterValue={inputValue}
         setFilterValue={handleInputChange}
@@ -633,11 +652,12 @@ export default function ProductManagement() {
         setLimit={setLimit}
         setPage={setPage}
         columns={columns}
-        onAddNew={setAddModalOpen}
+        onAddNew={() => setAddModalOpen(true)}
       />
+
       {/* Bộ lọc */}
       <div className="flex flex-col gap-4">
-        {/* Bộ lọc category */}
+        {/* Bộ lọc danh mục */}
         <div className="flex gap-2 items-center">
           <Dropdown>
             <DropdownTrigger>
@@ -648,7 +668,7 @@ export default function ProductManagement() {
               </Button>
             </DropdownTrigger>
             <DropdownMenu
-              aria-label="Category filter"
+              aria-label="Bộ lọc danh mục"
               selectionMode="multiple"
               selectedKeys={selectedCategories}
               onSelectionChange={(keys) => {
@@ -661,7 +681,6 @@ export default function ProductManagement() {
               ))}
             </DropdownMenu>
           </Dropdown>
-          {/* Hiển thị categories đã chọn */}
           {selectedCategories.size > 0 && (
             <div className="flex gap-1">
               {[...selectedCategories].map((catId) => {
@@ -689,21 +708,18 @@ export default function ProductManagement() {
 
         {/* Thanh kéo giá */}
         <div className="flex flex-col gap-2 max-w-md">
-          {/* <div className="flex justify-between">
-            <span>
-              Giá: {priceRange[0]} - {priceRange[1]}
-            </span>
-          </div> */}
           <Slider
             formatOptions={{
-              locale: "it-IT",
+              locale: "vi-VN",
               style: "currency",
               currency: "VND",
             }}
             showTooltip={true}
-            tooltipValueFormatOptions={
-              ("it-IT", { style: "currency", currency: "VND" })
-            }
+            tooltipValueFormatOptions={{
+              locale: "vi-VN",
+              style: "currency",
+              currency: "VND",
+            }}
             defaultValue={[0, 999999999]}
             step={100000}
             minValue={0}
@@ -713,24 +729,22 @@ export default function ProductManagement() {
               setPriceRange(value);
               setPage(1);
             }}
-            label="Currency"
-            // trackStyle={[{ backgroundColor: "#6B46C1" }]}
-            // handleStyle={[
-            //   { borderColor: "#6B46C1" },
-            //   { borderColor: "#6B46C1" },
-            // ]}
+            label="Khoảng giá"
           />
         </div>
 
         {/* Nút xóa bộ lọc */}
         {(selectedCategories.size > 0 ||
           priceRange[0] > 0 ||
-          priceRange[1] < 999999999) && (
+          priceRange[1] < 999999999
+          
+          ) && (
           <Button variant="flat" color="danger" onPress={clearFilters}>
             Xóa bộ lọc
           </Button>
         )}
       </div>
+
       <TableComponent
         items={products.map((item, index) => ({
           ...item,
@@ -761,7 +775,7 @@ export default function ProductManagement() {
         }}
         isLoading={productLoading || categoryLoading}
         isSorting
-        onSort={(handleSort)}
+        onSort={handleSort}
       />
     </div>
   );
