@@ -82,8 +82,26 @@ export default function CategoryManagement() {
   const [addName, setAddName] = useState("");
   const [editName, setEditName] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [errorMess, setErrorMess] = useState("");
+
+  const handleSort = async (sortKey, sortOrder) => {
+    try {
+      setPage(1); // Reset về trang đầu khi sắp xếp
+      setLimit(10); // Reset về limit mặc định khi sắp xếp
+      await searchCategoryByKeyword(
+        filterValue,
+        page,
+        limit,
+        sortOrder,
+        sortKey
+      );
+    } catch (err) {
+      setErrorMess(err.message || "Error sorting data");
+    }
+  };
 
   // Fetch dữ liệu khi page, limit, hoặc filterValue thay đổi
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -95,13 +113,7 @@ export default function CategoryManagement() {
           await fetchCategories(page, limit);
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
-        <CustomModal
-          isOpen={isOpen}
-          onOpenChange={onOpenChange}
-          title="Error"
-          message={err}
-        />;
+        setErrorMess(err.message || "Error fetching data");
       }
     };
     fetchData();
@@ -115,7 +127,6 @@ export default function CategoryManagement() {
       }, 200), // Chờ 200ms sau khi người dùng ngừng gõ
     []
   );
-
 
   const handleCloseModal = () => {
     clearError();
@@ -231,17 +242,13 @@ export default function CategoryManagement() {
     }
   };
 
-  const handleSort = async (sortKey, sortOrder) => {
-    await fetchCategories(page, limit, sortKey, sortOrder);
-  };
-
   return (
     <div className="p-6">
       <CustomModal
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         title="Oops!"
-        message={error}
+        message={error || errorMess}
         onClose={handleCloseModal}
       />
       {/* Modal cho "Thêm" */}
@@ -301,7 +308,6 @@ export default function CategoryManagement() {
         onDelete={handleConfirmDelete} // Thêm hàm xóa vào props
       />
 
-
       <h1 className="text-2xl font-semibold mb-4">Quản lý danh mục</h1>
 
       <TopContent
@@ -327,6 +333,7 @@ export default function CategoryManagement() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         isLoading={isLoading}
+        isSorting
         onSort={handleSort} // Thêm hàm sắp xếp vào props
       />
     </div>

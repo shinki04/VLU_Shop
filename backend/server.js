@@ -26,7 +26,7 @@ app.use(
     origin: "http://localhost:5173", // Chỉ định chính xác origin của frontend
     credentials: true, // Cho phép gửi cookie/session
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization",'Cache-Control'],
   })
 );
 

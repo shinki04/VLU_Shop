@@ -21,16 +21,11 @@ const useCategoryStore = create(
 
       clearError: () => set({ error: null }),
 
-      fetchCategories: async (
-        page = 1,
-        limit = 5,
-        sortBy = null,
-        sortOrder = "desc"
-      ) => {
+      fetchCategories: async (page = 1, limit = 5) => {
         set({ isLoading: true, error: null });
         try {
           const res = await axios.get(`${CATEGORY_URL}/categories`, {
-            params: { page, limit, sortBy, sortOrder },
+            params: { page, limit },
           });
 
           set({
@@ -103,23 +98,32 @@ const useCategoryStore = create(
           throw err;
         }
       },
-      searchCategoryByKeyword: async (q, page, limit) => {
+      searchCategoryByKeyword: async (
+        q,
+        page,
+        limit,
+        sortBy = null,
+        sortOrder = "desc"
+      ) => {
         set({ isLoading: true, error: null });
         try {
           const res = await axios.get(`${CATEGORY_URL}/search`, {
-            params: { q, page, limit },
+            params: { q, page, limit, sortBy, sortOrder },
           });
           set({
             categories: res.data.categories,
             total: res.data.total,
             page: res.data.page,
             limit: res.data.limit,
+            sortBy: res.data.sortBy,
+            sortOrder: res.data.sortOrder,
             isLoading: false,
           });
           return res.data.categories;
         } catch (err) {
           set({
-            error: err.response?.data?.message || "Error search data",
+            error:
+              err.response?.data?.message || err.message || "Error search data",
             isLoading: false,
           });
           throw err;

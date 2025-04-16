@@ -22,7 +22,7 @@ import {
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
-import { add, debounce } from "lodash";
+import { debounce } from "lodash";
 
 const columns = [
   { name: "STT", uid: "index" },
@@ -31,6 +31,7 @@ const columns = [
   { name: "Giá", uid: "price" },
   { name: "Danh mục", uid: "category" },
   { name: "Tồn kho", uid: "countInStock" },
+  { description: "Mô tả", uid: "description" },
   { name: "Hành động", uid: "actions" },
 ];
 
@@ -40,6 +41,7 @@ const INITIAL_VISIBLE_COLUMNS = [
   "images",
   "price",
   "category",
+  "description",
   "countInStock",
   "actions",
 ];
@@ -70,11 +72,11 @@ export default function ProductManagement() {
   const [visibleColumns, setVisibleColumns] = useState(
     new Set(INITIAL_VISIBLE_COLUMNS)
   );
-  const [sortBy, setSortBy] = useState(null);
-  const [sortOrder, setSortOrder] = useState("desc");
+  // const [sortBy, setSortBy] = useState(null);
+  // const [sortOrder, setSortOrder] = useState("desc");
   const [errorMess, setErrorMess] = useState("");
   const [inputValue, setInputValue] = useState("");
-  const [filterValue, setFilterValue] = useState("");
+  const [searchValue, setSearchValue] = useState("");
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -102,12 +104,14 @@ export default function ProductManagement() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
+  const selectedCategoryId =
+    editCategory && categories.some((cat) => cat._id === editCategory)
+      ? editCategory
+      : products?.category?._id &&
+        categories.some((cat) => cat._id === products.category._id)
+      ? products.category._id
+      : null;
 
-  const currentSelected = categories.some((cat) => cat._id === editCategory)
-    ? editCategory
-    : categories.some((cat) => cat._id === products.category?._id)
-    ? products.category?._id
-    : null;
   // Lấy danh mục khi component mount
   useEffect(() => {
     const loadCategories = async () => {
@@ -137,15 +141,8 @@ export default function ProductManagement() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (filterValue) {
-          await filterProducts(
-            { search: filterValue },
-            null,
-            null,
-            "desc",
-            page,
-            limit
-          );
+        if (searchValue.trim() !== "") {
+          await filterProducts(searchValue, page, limit);
         } else {
           await fetchAllProducts(page, limit);
         }
@@ -154,15 +151,16 @@ export default function ProductManagement() {
       }
     };
     fetchData();
-  }, [page, limit, filterValue, fetchAllProducts, filterProducts]);
+  }, [page, limit, searchValue, fetchAllProducts, filterProducts]);
 
   const debouncedSetFilterValue = useMemo(
-    () => debounce((value) => setFilterValue(value), 200),
+    () => debounce((value) => setSearchValue(value), 200),
     []
   );
 
   const handleInputChange = (value) => {
     setInputValue(value);
+    setPage(1); // Reset về trang đầu tiên mỗi khi tìm kiếm
     debouncedSetFilterValue(value);
   };
 
@@ -364,6 +362,13 @@ export default function ProductManagement() {
     }
   };
 
+  // const handleSort = async (sortKey, sortOrder) => {
+  //   setPage(1); // Reset về trang đầu khi sắp xếp
+  //   setLimit(10); // Reset về limit mặc định khi sắp xếp
+  //   const search = ""; // Nếu có tìm kiếm thì giữ lại, nếu không thì để rỗng
+  //   const checked = ""; // Nếu có lọc thì giữ lại, nếu không thì để rỗng
+  //   await filterProducts(search, checked, sortKey, sortOrder, limit, page);
+  // };
   return (
     <div className="">
       <CustomModal
@@ -454,7 +459,6 @@ export default function ProductManagement() {
           <ModalFooter></ModalFooter>
         </ModalContent>
       </Modal>
-
       {/* Modal cho "Sửa" */}
       <Modal
         size={"3xl"}
@@ -503,7 +507,9 @@ export default function ProductManagement() {
                     className="max-w-xs"
                     label="Danh mục"
                     fullWidth
-                     selectedKeys={currentSelected ? [currentSelected] : []}
+                    selectedKeys={
+                      selectedCategoryId ? [selectedCategoryId] : []
+                    }
                     onSelectionChange={(keys) =>
                       setEditCategory(Array.from(keys)[0])
                     }
@@ -552,7 +558,6 @@ export default function ProductManagement() {
           <ModalFooter></ModalFooter>
         </ModalContent>
       </Modal>
-
       {/* Modal cho "Xóa" */}
       <DeleteModal
         isOpen={deleteModalOpen}
@@ -560,9 +565,7 @@ export default function ProductManagement() {
         onDelete={handleDeleteProduct}
         itemName={selectedItem?.name}
       />
-
       <h1 className="text-2xl font-semibold mb-4">Quản lý sản phẩm</h1>
-
       <TopContent
         filterValue={inputValue}
         setFilterValue={handleInputChange}
@@ -574,7 +577,6 @@ export default function ProductManagement() {
         columns={columns}
         onAddNew={setAddModalOpen}
       />
-
       <TableComponent
         items={products.map((item, index) => ({
           ...item,
@@ -588,11 +590,12 @@ export default function ProductManagement() {
         totalPages={totalPages}
         visibleColumns={visibleColumns}
         onEdit={(product) => {
+          const originalProduct = products.find((p) => p._id === product._id);
           setSelectedItem(product);
           setEditName(product.name);
           setEditDescription(product.description);
           setEditPrice(product.price);
-          setEditCategory(product.category?._id || product.category);
+          setEditCategory(originalProduct?.category?._id || null);
           setEditCountInStock(product.countInStock);
           setEditBrand(product.brand);
           setEditImages(product.images);
@@ -603,6 +606,7 @@ export default function ProductManagement() {
           setDeleteModalOpen(true);
         }}
         isLoading={productLoading || categoryLoading}
+        isSorting // Bật sorting client-side
       />
     </div>
   );

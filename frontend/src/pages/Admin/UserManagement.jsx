@@ -526,6 +526,8 @@ export default function UserManagement() {
           setDeleteModalOpen(true);
         }}
         isLoading={isLoading}
+        isSorting={false}
+        isFiltering={false}
       />
     </div>
   );

@@ -7,10 +7,10 @@ const PRODUCT_API =
     ? "http://localhost:3000/api/products"
     : "/api/products";
 
-    const UPLOAD_URL =
-    import.meta.env.MODE === "development"
-      ? "http://localhost:3000/api/upload"
-      : "/api/upload";
+const UPLOAD_URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:3000/api/upload"
+    : "/api/upload";
 
 const useProductStore = create((set) => ({
   products: [],
@@ -119,18 +119,24 @@ const useProductStore = create((set) => ({
 
   // Lọc sản phẩm
   filterProducts: async (
-    filters,
+    searchValue,
     checked,
     sortBy = null,
-    sortOrder = "desc"
+    sortOrder = "desc",
+    limit,
+    page
   ) => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${PRODUCT_API}/filter`, {
-        params: filters,
-        checked,
-        sortBy,
-        sortOrder,
+        params: {
+          search: searchValue, // Điều này giữ nguyên, searchValue là giá trị tìm kiếm
+          page, // Thay vì `search`, truyền `page`
+          limit, // Lấy giá trị từ `limit`
+          sortBy, // Truyền trường sắp xếp
+          sortOrder, // Truyền thứ tự sắp xếp
+          checked, // Truyền giá trị `checked` cho bộ lọc
+        },
       });
       set({ products: response.data.products, isLoading: false });
     } catch (error) {
