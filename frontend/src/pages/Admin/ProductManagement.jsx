@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, use } from "react";
 import useProductStore from "../../store/productStore";
 import useCategoryStore from "../../store/categoryStore";
 import CustomModal from "../../components/Modal/CustomModal.jsx";
@@ -22,7 +22,7 @@ import {
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
-import { debounce } from "lodash";
+import { add, debounce } from "lodash";
 
 const columns = [
   { name: "STT", uid: "index" },
@@ -70,6 +70,9 @@ export default function ProductManagement() {
   const [visibleColumns, setVisibleColumns] = useState(
     new Set(INITIAL_VISIBLE_COLUMNS)
   );
+  const [sortBy, setSortBy] = useState(null);
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [errorMess, setErrorMess] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [filterValue, setFilterValue] = useState("");
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
@@ -99,6 +102,12 @@ export default function ProductManagement() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
+
+  const currentSelected = categories.some((cat) => cat._id === editCategory)
+    ? editCategory
+    : categories.some((cat) => cat._id === products.category?._id)
+    ? products.category?._id
+    : null;
   // Lấy danh mục khi component mount
   useEffect(() => {
     const loadCategories = async () => {
@@ -113,11 +122,17 @@ export default function ProductManagement() {
 
   // Hiển thị lỗi nếu có (từ product hoặc category store)
   useEffect(() => {
-    if (productError || categoryError) {
+    if (productError || categoryError || errorMess) {
       onOpen();
     }
-  }, [productError, categoryError, onOpen]);
+  }, [productError, categoryError, onOpen, errorMess]);
 
+  useEffect(() => {
+    if (!isOpen && errorMess) {
+      console.log("Modal closed. Clearing error message.");
+      setErrorMess("");
+    }
+  }, [isOpen]);
   // Lấy dữ liệu sản phẩm
   useEffect(() => {
     const fetchData = async () => {
@@ -155,7 +170,11 @@ export default function ProductManagement() {
     e.preventDefault();
     try {
       console.log(addImages);
-
+      if (addImages.length > 5) {
+        setErrorMess("Sản phẩm chỉ được tối đa 5 ảnh!");
+        // throw new Error("Sản phẩm chỉ được tối đa 5 ảnh!");
+        return;
+      }
       // Gọi hàm uploadProductImages để tải ảnh lên và nhận phản hồi
       const uploadResponse = await uploadProductImages(addImages);
       console.log(uploadResponse);
@@ -204,16 +223,83 @@ export default function ProductManagement() {
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
     if (selectedItem) {
+      if (editImages.length > 5) {
+        setErrorMess("Sản phẩm chỉ được tối đa 5 ảnh!");
+        // throw new Error("Sản phẩm chỉ được tối đa 5 ảnh!");
+        return;
+      }
       try {
-        console.log(imageUrls);
-        // Nếu không có ảnh mới, giữ nguyên ảnh cũ
-        const imageUrls =
-          editImages.length > 0 ? editImages : selectedItem.images;
-        // Nếu có ảnh mới, upload ảnh mới và lấy URL
-        if (editImages.length > 0) {
-          const uploadedImages = await uploadProductImages(editImages);
-          console.log(uploadedImages);
+        const existingImages = selectedItem.images || [];
+
+        // Check nếu có ảnh mới (ảnh trong editImages mà không có trong existingImages)
+        const isNewImageAdded = editImages.some(
+          (img) => !existingImages.includes(img)
+        );
+
+        let finalImages = [...editImages];
+
+        if (isNewImageAdded) {
+          // Tìm các ảnh mới (có thể là File hoặc blob URL nếu dùng input file)
+          const newImageFiles = editImages.filter(
+            (img) => typeof img !== "string"
+          );
+          console.log(newImageFiles);
+
+          if (newImageFiles.length > 0) {
+            const uploaded = await uploadProductImages(newImageFiles);
+            finalImages = [
+              ...editImages.filter((img) => typeof img === "string"),
+              ...uploaded.map((u) => u.url),
+            ];
+          }
         }
+
+        console.log(editImages);
+        console.log(isNewImageAdded);
+        console.log(finalImages);
+
+        // const existingImages = selectedItem.images || [];
+
+        // console.log(editImages);
+        // console.log(selectedItem.images);
+        // console.log(existingImages);
+
+        // // Lọc ra ảnh mới (kiểu File) chưa có trong danh sách ảnh cũ (kiểu URL)
+        // const newImages = editImages.filter(
+        //   (img) => typeof img !== "string" && !existingImages.includes(img)
+        // );
+        // console.log(newImages);
+
+        // let uploadedImages = [];
+        // if (newImages.length > 0) {
+        //   uploadedImages = await uploadProductImages(newImages);
+        // }
+
+        // // Nếu người dùng đã chọn lại toàn bộ ảnh (tức là ảnh kiểu File), dùng ảnh mới
+        // // Nếu không có ảnh mới thì giữ ảnh cũ
+        // const finalImages =
+        //   uploadedImages.length > 0
+        //     ? uploadedImages.map((img) => img.url)
+        //     : existingImages;
+
+        // const uploadResponse = await uploadProductImages(editImages);
+        // console.log(uploadResponse);
+
+        //  // Nếu có ảnh mới, upload ảnh mới và lấy URL
+        // if (editImages.length > 0) {
+        //   const uploadedImages = await uploadProductImages(editImages);
+        //   console.log(uploadedImages);
+        // }
+
+        // const imageUrls = uploadResponse.map((image) => image.url); // Trích xuất các URL từ mảng ảnh
+        // const imageUrls = editImages.length > 0
+        // ? (await uploadProductImages(editImages)).map((image) => image.url)
+        // : selectedItem.images;
+
+        // Nếu không có ảnh mới, giữ nguyên ảnh cũ
+        // const existingImages = selectedItem.images || []; // Lấy ảnh cũ từ sản phẩm
+        // const editImages = imageUrls.length > 0 ? imageUrls : existingImages; // Nếu có ảnh mới, sử dụng ảnh mới, nếu không thì giữ nguyên ảnh cũ
+
         const updatedData = {
           name: editName,
           description: editDescription,
@@ -221,8 +307,9 @@ export default function ProductManagement() {
           category: editCategory,
           countInStock: parseInt(editCountInStock),
           brand: editBrand,
-          images: imageUrls,
+          images: finalImages,
         };
+        console.log(updatedData);
 
         await updateProduct(selectedItem._id, updatedData);
 
@@ -283,7 +370,7 @@ export default function ProductManagement() {
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         title="Oops!"
-        message={productError || categoryError}
+        message={productError || categoryError || errorMess}
       />
       {/* Modal cho "Thêm" */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
@@ -416,7 +503,7 @@ export default function ProductManagement() {
                     className="max-w-xs"
                     label="Danh mục"
                     fullWidth
-                    selectedKeys={[editCategory]}
+                     selectedKeys={currentSelected ? [currentSelected] : []}
                     onSelectionChange={(keys) =>
                       setEditCategory(Array.from(keys)[0])
                     }
