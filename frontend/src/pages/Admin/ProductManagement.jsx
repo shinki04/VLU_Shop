@@ -28,7 +28,7 @@ import {
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
-import { debounce } from "lodash";
+import { debounce, sortBy } from "lodash";
 
 const columns = [
   { name: "STT", uid: "index" },
@@ -78,8 +78,8 @@ export default function ProductManagement() {
   const [visibleColumns, setVisibleColumns] = useState(
     new Set(INITIAL_VISIBLE_COLUMNS)
   );
-  // const [sortBy, setSortBy] = useState(null);
-  // const [sortOrder, setSortOrder] = useState("desc");
+  const [sortBy, setSortBy] = useState(null);
+  const [sortOrder, setSortOrder] = useState("desc");
   const [errorMess, setErrorMess] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [searchValue, setSearchValue] = useState("");
@@ -178,8 +178,8 @@ export default function ProductManagement() {
             searchValue,
             checked,
             priceRangeStr,
-            "",
-            "",
+            sortBy,
+            sortOrder,
             limit,
             page
           );
@@ -199,6 +199,8 @@ export default function ProductManagement() {
     fetchAllProducts,
     filterProducts,
     searchValue,
+    sortBy,
+    sortOrder,
   ]);
 
   const debouncedSetFilterValue = useMemo(
@@ -417,13 +419,13 @@ export default function ProductManagement() {
     }
   };
 
-  // const handleSort = async (sortKey, sortOrder) => {
-  //   setPage(1); // Reset về trang đầu khi sắp xếp
-  //   setLimit(10); // Reset về limit mặc định khi sắp xếp
-  //   const search = ""; // Nếu có tìm kiếm thì giữ lại, nếu không thì để rỗng
-  //   const checked = ""; // Nếu có lọc thì giữ lại, nếu không thì để rỗng
-  //   await filterProducts(search, checked, sortKey, sortOrder, limit, page);
-  // };
+  const handleSort = async (sortBy, sortOrder) => {
+    setPage(1); // Reset về trang đầu khi sắp xếp
+    setLimit(10); // Reset về limit mặc định khi sắp xếp
+    // const search = ""; // Nếu có tìm kiếm thì giữ lại, nếu không thì để rỗng
+    // const checked = ""; // Nếu có lọc thì giữ lại, nếu không thì để rỗng
+    await filterProducts("", "", "", sortBy, sortOrder,limit, page);
+  };
   return (
     <div className="">
       <CustomModal
@@ -759,6 +761,7 @@ export default function ProductManagement() {
         }}
         isLoading={productLoading || categoryLoading}
         isSorting
+        onSort={(handleSort)}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableHeader,
@@ -12,8 +12,9 @@ import {
 } from "@heroui/react";
 import { PaginationControls } from "../../components/Pagination/PaginationControls";
 import { UserRoundX, UserRoundCheck } from "lucide-react";
+import { color } from "framer-motion";
 
-// Custom Edit Icon (Pencil)
+// Icon tùy chỉnh cho "Sửa" (bút chì)
 const EditIcon = ({ size = 20 }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -32,7 +33,7 @@ const EditIcon = ({ size = 20 }) => (
   </svg>
 );
 
-// Custom Delete Icon (Trash)
+// Icon tùy chỉnh cho "Xóa" (thùng rác)
 const DeleteIcon = ({ size = 20 }) => (
   <svg
     width={size}
@@ -49,7 +50,7 @@ const DeleteIcon = ({ size = 20 }) => (
   </svg>
 );
 
-// Sort Icon
+// Icon cho trạng thái sắp xếp
 const SortIcon = ({ sortOrder, isActive }) => (
   <svg
     width="16"
@@ -62,7 +63,7 @@ const SortIcon = ({ sortOrder, isActive }) => (
     strokeLinejoin="round"
     style={{ marginLeft: "4px", opacity: isActive ? 1 : 0.5 }}
   >
-    {sortOrder === "ascending" ? (
+    {sortOrder === "asc" ? (
       <path d="M12 5v14M5 12l7-7 7 7" />
     ) : (
       <path d="M12 5v14M5 12l7 7 7-7" />
@@ -71,99 +72,98 @@ const SortIcon = ({ sortOrder, isActive }) => (
 );
 
 export const TableComponent = ({
-  items = [], // Data array (e.g., products from store for current page)
-  columns, // Column definitions (name, uid, sortable, etc.)
-  page, // Current page
-  setPage, // Function to update page
-  limit, // Items per page
-  totalPages, // Total pages
-  visibleColumns, // Set of visible column UIDs
-  renderCell, // Custom render function for cells (optional)
-  onEdit, // Callback for edit action
-  onDelete, // Callback for delete action
-  isLoading = false, // Loading state
-  isSorting = false, // Enable/disable sorting
+  items, // Dữ liệu để hiển thị (mảng bất kỳ)
+  columns, // Danh sách cột (name, uid, và các thuộc tính khác nếu cần)
+  page, // Trang hiện tại
+  setPage, // Hàm cập nhật trang
+  limit, // Số mục mỗi trang
+  totalPages, // Tổng số trang
+  visibleColumns, // Tập hợp các cột hiển thị (Set)
+  renderCell, // Hàm tùy chỉnh để render ô (tùy chọn)
+  onEdit, // Callback khi nhấn "Sửa"
+  onDelete, // Callback khi nhấn "Xóa"
+  isLoading, // Trạng thái loading
+  onSort, // Callback khi sắp xếp (mới)
+  onFilter, // Callback khi lọc (mới)
+  isSorting = false, // Trạng thái sắp xếp (mới)
+  isFiltering = false, // Trạng thái lọc (mới)
 }) => {
-  // State for sort configuration
-  const [sortDescriptor, setSortDescriptor] = React.useState({
-    column: null,
-    direction: "ascending",
+  // State để quản lý cột sắp xếp và hướng sắp xếp
+  const [sortState, setSortState] = useState({
+    sortKey: null,
+    sortOrder: "asc",
   });
 
-  // Validate page
-  useEffect(() => {
-    if (totalPages > 0 && page > totalPages) {
-      console.log("Invalid page, resetting to last page:", totalPages);
-      setPage(totalPages);
-    }
-  }, [page, totalPages, setPage]);
-
-  // Sort items client-side
-  const sortedItems = useMemo(() => {
-    if (!isSorting || !sortDescriptor.column) {
-      console.log(
-        "No sorting applied, returning original items:",
-        items.length
-      );
-      return items;
-    }
-    console.log(
-      "Sorting items:",
-      sortDescriptor.column,
-      sortDescriptor.direction
-    );
-    return [...items].sort((a, b) => {
-      let first = a[sortDescriptor.column];
-      let second = b[sortDescriptor.column];
-
-      // Handle special cases
-      if (sortDescriptor.column === "category") {
-        first = a.category?.name || a.category || "";
-        second = b.category?.name || b.category || "";
-      } else if (sortDescriptor.column === "price") {
-        first = parseFloat(first) || 0;
-        second = parseFloat(second) || 0;
-      } else if (sortDescriptor.column === "countInStock") {
-        first = parseInt(first) || 0;
-        second = parseInt(second) || 0;
-      } else {
-        first = first?.toString().toLowerCase() || "";
-        second = second?.toString().toLowerCase() || "";
-      }
-
-      let cmp = 0;
-      if (first < second) cmp = -1;
-      else if (first > second) cmp = 1;
-
-      if (sortDescriptor.direction === "descending") {
-        cmp *= -1;
-      }
-      return cmp;
-    });
-  }, [items, sortDescriptor, isSorting]);
-
-  // Handle sort change
-  const handleSortChange = (newSortDescriptor) => {
-    console.log("Sort change:", newSortDescriptor);
-    setSortDescriptor({
-      column: newSortDescriptor.column,
-      direction:
-        newSortDescriptor.column === sortDescriptor.column &&
-        sortDescriptor.direction === "ascending"
-          ? "descending"
-          : "ascending",
-    });
-  };
-
-  // Filter columns based on visibleColumns
+  // Lọc cột hiển thị dựa trên visibleColumns
   const headerColumns = columns.filter(
     (column) => column.uid === "actions" || visibleColumns.has(column.uid)
   );
 
-  // Default renderCell function
+  // Hàm xử lý click vào header để sắp xếp
+  const handleSort = (columnUid) => {
+    // Không cho phép sắp xếp cột actions hoặc index
+    if (columnUid === "actions" || columnUid === "index") return;
+
+    const newSortOrder =
+      sortState.sortKey === columnUid && sortState.sortOrder === "asc"
+        ? "desc"
+        : "asc";
+
+    setSortState({
+      sortKey: columnUid,
+      sortOrder: newSortOrder,
+    });
+
+    // Gọi hàm onSort từ props (nếu có)
+    if (onSort) {
+      onSort(columnUid, newSortOrder);
+    }
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortState.sortKey) return items;
+    return [...items].sort((a, b) => {
+      const aValue = a[sortState.sortKey];
+      const bValue = b[sortState.sortKey];
+      if (aValue < bValue) return sortState.sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortState.sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [items, sortState.sortKey, sortState.sortOrder]);
+  // const handleSort = (columnUid) => {
+  //   if (columnUid === "actions" || columnUid === "index") return;
+
+  //   const newSortOrder =
+  //     sortState.sortKey === columnUid && sortState.sortOrder === "asc"
+  //       ? "desc"
+  //       : "asc";
+
+  //   setSortState({
+  //     sortKey: columnUid,
+  //     sortOrder: newSortOrder,
+  //   });
+
+  //   const newSortedItems = [...sortedItems].sort((a, b) => {
+  //     let aValue = a[columnUid];
+  //     let bValue = b[columnUid];
+
+  //     // Xử lý trường hợp đặc biệt
+  //     if (columnUid === "role") {
+  //       aValue = aValue || "";
+  //       bValue = bValue || "";
+  //     }
+
+  //     if (aValue < bValue) return newSortOrder === "asc" ? -1 : 1;
+  //     if (aValue > bValue) return newSortOrder === "asc" ? 1 : -1;
+  //     return 0;
+  //   });
+  //   setSortedItems(newSortedItems);
+  // };
+
+  // Hàm render mặc định nếu không truyền renderCell
   const defaultRenderCell = (item, columnKey, index) => {
     if (columnKey === "index") {
-      return (page - 1) * limit + index + 1; // Row number
+      return (page - 1) * limit + index + 1; // STT
     }
     switch (columnKey) {
       case "actions":
@@ -191,16 +191,34 @@ export const TableComponent = ({
             </Button>
           </div>
         );
-      case "image":
-      case "images": {
-        const imageUrl = Array.isArray(item[columnKey])
-          ? item[columnKey][0]
-          : item[columnKey];
+
+      case "image": {
+        const imageUrl = Array.isArray(item.image) ? item.image[0] : item.image;
         const baseUrl =
           import.meta.env.NODE_ENV === "production"
             ? ""
             : "http://localhost:3000";
         const fullImageUrl = `${baseUrl}${imageUrl}`;
+
+        return (
+          <img
+            src={fullImageUrl}
+            alt="image"
+            loading="lazy"
+            style={{ width: "50px", height: "50px", objectFit: "cover" }}
+          />
+        );
+      }
+      case "images": {
+        const imageUrl = Array.isArray(item.images)
+          ? item.images[0]
+          : item.images;
+        const baseUrl =
+          import.meta.env.NODE_ENV === "production"
+            ? ""
+            : "http://localhost:3000";
+        const fullImageUrl = `${baseUrl}${imageUrl}`;
+
         return (
           <img
             src={fullImageUrl}
@@ -219,7 +237,7 @@ export const TableComponent = ({
             {item.role}
           </Chip>
         );
-      case "isVerified":
+      case "isVerified": {
         return (
           <Chip
             className="text-center font-extralight"
@@ -232,28 +250,13 @@ export const TableComponent = ({
             )}
           </Chip>
         );
-      case "category":
-        return item.category?.name || item.category || "";
-      case "price":
-        return item.price?.toLocaleString("it-IT", {
-          style: "currency",
-          currency: "VND",
-        });
-      case "countInStock":
-        return (
-          <Chip
-            className="text-center font-extralight"
-            variant="light"
-            color={item.countInStock < 10 ? "danger" : item.countInStock < 20 ? "warning" : "success"}
-          >
-            {item.countInStock}
-          </Chip>
-        );
+      }
       default:
-        return item[columnKey] || "";
+        return item[columnKey] || ""; // Giá trị mặc định
     }
   };
 
+  // Sử dụng renderCell từ props nếu có, nếu không dùng mặc định
   const cellRenderer = renderCell || defaultRenderCell;
 
   return (
@@ -267,8 +270,6 @@ export const TableComponent = ({
           isHeaderSticky
           aria-label="Generic Table"
           color="secondary"
-          sortDescriptor={isSorting ? sortDescriptor : undefined}
-          onSortChange={isSorting ? handleSortChange : undefined}
           bottomContent={
             totalPages > 0 && (
               <PaginationControls
@@ -285,32 +286,34 @@ export const TableComponent = ({
               <TableColumn
                 key={column.uid}
                 align="start"
-                allowsSorting={
-                  isSorting &&
-                  column.uid !== "actions" &&
-                  column.uid !== "index"
-                }
+                onClick={isSorting ? () => handleSort(column.uid) : undefined}
+                style={{
+                  cursor: column.uid !== "actions" ? "pointer" : "default",
+                }}
+                allowsSorting={column.sortable}
               >
-                {column.name}
-                {/* <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
                   {column.name}
-                  {isSorting && column.uid !== "actions" && column.uid !== "index" && (
-                    <SortIcon
-                      sortOrder={
-                        sortDescriptor.column === column.uid
-                          ? sortDescriptor.direction
-                          : "ascending"
-                      }
-                      isActive={sortDescriptor.column === column.uid}
-                    />
-                  )}
-                </div> */}
+                  {column.uid !== "actions" &&
+                    column.uid !== "index" &&
+                    isSorting === true && (
+                      <SortIcon
+                        sortOrder={
+                          sortState.sortKey === column.uid
+                            ? sortState.sortOrder
+                            : "asc"
+                        }
+                        isActive={sortState.sortKey === column.uid}
+                      />
+                    )}
+                </div>
               </TableColumn>
             )}
           </TableHeader>
+          {/* Render các hàng dữ liệu */}
           <TableBody emptyContent={"Không tìm thấy dữ liệu"}>
             {sortedItems.map((item, index) => (
-              <TableRow key={item._id || index}>
+              <TableRow key={item.id || index}>
                 {headerColumns.map((column) => (
                   <TableCell key={column.uid}>
                     {cellRenderer(item, column.uid, index)}
