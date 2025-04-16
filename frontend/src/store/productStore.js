@@ -17,9 +17,10 @@ const useProductStore = create((set) => ({
   product: null,
   isLoading: false,
   error: null,
-  total: 0,
+  totalProducts: 0,
   page: 1,
   limit: 5,
+  // totalPages: 0,
   sortBy: null,
   sortOrder: "desc",
 
@@ -107,7 +108,13 @@ const useProductStore = create((set) => ({
       const response = await axios.get(`${PRODUCT_API}`, {
         params: { page, limit },
       });
-      set({ products: response.data.products, isLoading: false });
+      set({
+        products: response.data.products,
+        totalProducts: response.data.totalProducts,
+        page: response.data.page,
+        limit: response.data.limit,
+        isLoading: false,
+      });
     } catch (error) {
       set({
         isLoading: false,
@@ -121,6 +128,7 @@ const useProductStore = create((set) => ({
   filterProducts: async (
     searchValue,
     checked,
+    priceRange,
     sortBy = null,
     sortOrder = "desc",
     limit,
@@ -136,6 +144,7 @@ const useProductStore = create((set) => ({
           sortBy, // Truyền trường sắp xếp
           sortOrder, // Truyền thứ tự sắp xếp
           checked, // Truyền giá trị `checked` cho bộ lọc
+          priceRange, // Truyền giá trị `priceRange` cho bộ lọc
         },
       });
       set({ products: response.data.products, isLoading: false });

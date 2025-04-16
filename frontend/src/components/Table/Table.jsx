@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -10,7 +10,6 @@ import {
   Button,
   Chip,
 } from "@heroui/react";
-import { useAsyncList } from "@react-stately/data";
 import { PaginationControls } from "../../components/Pagination/PaginationControls";
 import { UserRoundX, UserRoundCheck } from "lucide-react";
 
@@ -51,28 +50,28 @@ const DeleteIcon = ({ size = 20 }) => (
 );
 
 // Sort Icon
-// const SortIcon = ({ sortOrder, isActive }) => (
-//   <svg
-//     width="16"
-//     height="16"
-//     viewBox="0 0 24 24"
-//     fill="none"
-//     stroke="currentColor"
-//     strokeWidth="2"
-//     strokeLinecap="round"
-//     strokeLinejoin="round"
-//     style={{ marginLeft: "4px", opacity: isActive ? 1 : 0.5 }}
-//   >
-//     {sortOrder === "ascending" ? (
-//       <path d="M12 5v14M5 12l7-7 7 7" />
-//     ) : (
-//       <path d="M12 5v14M5 12l7 7 7-7" />
-//     )}
-//   </svg>
-// );
+const SortIcon = ({ sortOrder, isActive }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ marginLeft: "4px", opacity: isActive ? 1 : 0.5 }}
+  >
+    {sortOrder === "ascending" ? (
+      <path d="M12 5v14M5 12l7-7 7 7" />
+    ) : (
+      <path d="M12 5v14M5 12l7 7 7-7" />
+    )}
+  </svg>
+);
 
 export const TableComponent = ({
-  items = [], // Data array (e.g., products from store)
+  items = [], // Data array (e.g., products from store for current page)
   columns, // Column definitions (name, uid, sortable, etc.)
   page, // Current page
   setPage, // Function to update page
@@ -85,54 +84,80 @@ export const TableComponent = ({
   isLoading = false, // Loading state
   isSorting = false, // Enable/disable sorting
 }) => {
-  const list = useAsyncList({
-    async load({ signal }) {
-      return { items };
-    },
-    async sort({ items, sortDescriptor }) {
-      if (!sortDescriptor) return { items };
-      return {
-        items: items.sort((a, b) => {
-          let first = a[sortDescriptor.column];
-          let second = b[sortDescriptor.column];
-          // Handle special cases
-          if (sortDescriptor.column === "category") {
-            first = a.category?.name || a.category || "";
-            second = b.category?.name || b.category || "";
-          } else if (sortDescriptor.column === "price") {
-            first = parseFloat(first) || 0;
-            second = parseFloat(second) || 0;
-          } else if (sortDescriptor.column === "countInStock") {
-            first = parseInt(first) || 0;
-            second = parseInt(second) || 0;
-          } else {
-            first = first?.toString() || "";
-            second = second?.toString() || "";
-          }
-          let cmp = first < second ? -1 : 1;
-          if (sortDescriptor.direction === "descending") {
-            cmp *= -1;
-          }
-          return cmp;
-        }),
-      };
-    },
+  // State for sort configuration
+  const [sortDescriptor, setSortDescriptor] = React.useState({
+    column: null,
+    direction: "ascending",
   });
 
-  // Sync list.items with props.items when items change
+  // Validate page
   useEffect(() => {
-    list.reload();
-  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (totalPages > 0 && page > totalPages) {
+      console.log("Invalid page, resetting to last page:", totalPages);
+      setPage(totalPages);
+    }
+  }, [page, totalPages, setPage]);
+
+  // Sort items client-side
+  const sortedItems = useMemo(() => {
+    if (!isSorting || !sortDescriptor.column) {
+      console.log(
+        "No sorting applied, returning original items:",
+        items.length
+      );
+      return items;
+    }
+    console.log(
+      "Sorting items:",
+      sortDescriptor.column,
+      sortDescriptor.direction
+    );
+    return [...items].sort((a, b) => {
+      let first = a[sortDescriptor.column];
+      let second = b[sortDescriptor.column];
+
+      // Handle special cases
+      if (sortDescriptor.column === "category") {
+        first = a.category?.name || a.category || "";
+        second = b.category?.name || b.category || "";
+      } else if (sortDescriptor.column === "price") {
+        first = parseFloat(first) || 0;
+        second = parseFloat(second) || 0;
+      } else if (sortDescriptor.column === "countInStock") {
+        first = parseInt(first) || 0;
+        second = parseInt(second) || 0;
+      } else {
+        first = first?.toString().toLowerCase() || "";
+        second = second?.toString().toLowerCase() || "";
+      }
+
+      let cmp = 0;
+      if (first < second) cmp = -1;
+      else if (first > second) cmp = 1;
+
+      if (sortDescriptor.direction === "descending") {
+        cmp *= -1;
+      }
+      return cmp;
+    });
+  }, [items, sortDescriptor, isSorting]);
+
+  // Handle sort change
+  const handleSortChange = (newSortDescriptor) => {
+    console.log("Sort change:", newSortDescriptor);
+    setSortDescriptor({
+      column: newSortDescriptor.column,
+      direction:
+        newSortDescriptor.column === sortDescriptor.column &&
+        sortDescriptor.direction === "ascending"
+          ? "descending"
+          : "ascending",
+    });
+  };
 
   // Filter columns based on visibleColumns
   const headerColumns = columns.filter(
     (column) => column.uid === "actions" || visibleColumns.has(column.uid)
-  );
-
-  // Paginate items for display
-  const paginatedItems = list.items.slice(
-    (page - 1) * limit,
-    page * limit
   );
 
   // Default renderCell function
@@ -209,6 +234,21 @@ export const TableComponent = ({
         );
       case "category":
         return item.category?.name || item.category || "";
+      case "price":
+        return item.price?.toLocaleString("it-IT", {
+          style: "currency",
+          currency: "VND",
+        });
+      case "countInStock":
+        return (
+          <Chip
+            className="text-center font-extralight"
+            variant="light"
+            color={item.countInStock < 10 ? "danger" : item.countInStock < 20 ? "warning" : "success"}
+          >
+            {item.countInStock}
+          </Chip>
+        );
       default:
         return item[columnKey] || "";
     }
@@ -227,8 +267,8 @@ export const TableComponent = ({
           isHeaderSticky
           aria-label="Generic Table"
           color="secondary"
-          sortDescriptor={list.sortDescriptor}
-          onSortChange={isSorting ? list.sort : undefined}
+          sortDescriptor={isSorting ? sortDescriptor : undefined}
+          onSortChange={isSorting ? handleSortChange : undefined}
           bottomContent={
             totalPages > 0 && (
               <PaginationControls
@@ -245,19 +285,23 @@ export const TableComponent = ({
               <TableColumn
                 key={column.uid}
                 align="start"
-                allowsSorting={isSorting && column.uid !== "actions" && column.uid !== "index"}
+                allowsSorting={
+                  isSorting &&
+                  column.uid !== "actions" &&
+                  column.uid !== "index"
+                }
               >
-                 {column.name}
+                {column.name}
                 {/* <div style={{ display: "flex", alignItems: "center" }}>
                   {column.name}
                   {isSorting && column.uid !== "actions" && column.uid !== "index" && (
                     <SortIcon
                       sortOrder={
-                        list.sortDescriptor?.column === column.uid
-                          ? list.sortDescriptor.direction
+                        sortDescriptor.column === column.uid
+                          ? sortDescriptor.direction
                           : "ascending"
                       }
-                      isActive={list.sortDescriptor?.column === column.uid}
+                      isActive={sortDescriptor.column === column.uid}
                     />
                   )}
                 </div> */}
@@ -265,7 +309,7 @@ export const TableComponent = ({
             )}
           </TableHeader>
           <TableBody emptyContent={"Không tìm thấy dữ liệu"}>
-            {paginatedItems.map((item, index) => (
+            {sortedItems.map((item, index) => (
               <TableRow key={item._id || index}>
                 {headerColumns.map((column) => (
                   <TableCell key={column.uid}>

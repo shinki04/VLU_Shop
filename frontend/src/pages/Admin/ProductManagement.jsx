@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, use } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import useProductStore from "../../store/productStore";
 import useCategoryStore from "../../store/categoryStore";
 import CustomModal from "../../components/Modal/CustomModal.jsx";
@@ -18,6 +18,12 @@ import {
   SelectItem,
   Textarea,
   useDisclosure,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Slider,
+  Chip,
 } from "@heroui/react";
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
@@ -31,7 +37,7 @@ const columns = [
   { name: "Giá", uid: "price" },
   { name: "Danh mục", uid: "category" },
   { name: "Tồn kho", uid: "countInStock" },
-  { description: "Mô tả", uid: "description" },
+  { name: "Mô tả", uid: "description" },
   { name: "Hành động", uid: "actions" },
 ];
 
@@ -56,7 +62,7 @@ export default function ProductManagement() {
     removeProduct,
     isLoading: productLoading,
     error: productError,
-    total,
+    totalProducts,
     uploadProductImages,
   } = useProductStore();
 
@@ -77,12 +83,17 @@ export default function ProductManagement() {
   const [errorMess, setErrorMess] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [searchValue, setSearchValue] = useState("");
-  const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
+  const totalPages = useMemo(
+    () => Math.ceil(totalProducts / limit),
+    [totalProducts, limit]
+  );
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedCategories, setSelectedCategories] = useState(new Set()); // Nhiều category
+  const [priceRange, setPriceRange] = useState([0, 999999999]); // Thanh kéo giá [min, max]
 
   // Dữ liệu cho modal Thêm
   const [addName, setAddName] = useState("");
@@ -141,8 +152,37 @@ export default function ProductManagement() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (searchValue.trim() !== "") {
-          await filterProducts(searchValue, page, limit);
+        const checked = [...selectedCategories].join(",");
+        const priceRangeStr = priceRange.join(",");
+
+        console.log("Filtering:", {
+          checked,
+          priceRange: priceRangeStr,
+          page,
+          limit,
+        });
+        console.log("totalPages", totalPages);
+        console.log("page", page);
+        console.log("limit", limit);
+        console.log("searchValue", searchValue);
+        console.log("total", totalProducts);
+        console.log("selectedCategories", selectedCategories);
+        console.log("priceRange", priceRangeStr);
+        if (
+          searchValue ||
+          selectedCategories.size > 0 ||
+          priceRange[0] > 0 ||
+          priceRange[1] < 999999999
+        ) {
+          await filterProducts(
+            searchValue,
+            checked,
+            priceRangeStr,
+            "",
+            "",
+            limit,
+            page
+          );
         } else {
           await fetchAllProducts(page, limit);
         }
@@ -151,12 +191,27 @@ export default function ProductManagement() {
       }
     };
     fetchData();
-  }, [page, limit, searchValue, fetchAllProducts, filterProducts]);
+  }, [
+    page,
+    limit,
+    selectedCategories,
+    priceRange,
+    fetchAllProducts,
+    filterProducts,
+    searchValue,
+  ]);
 
   const debouncedSetFilterValue = useMemo(
     () => debounce((value) => setSearchValue(value), 200),
     []
   );
+
+  // Xóa bộ lọc
+  const clearFilters = () => {
+    setSelectedCategories(new Set());
+    setPriceRange([0, 999999999]);
+    setPage(1);
+  };
 
   const handleInputChange = (value) => {
     setInputValue(value);
@@ -377,6 +432,7 @@ export default function ProductManagement() {
         title="Oops!"
         message={productError || categoryError || errorMess}
       />
+
       {/* Modal cho "Thêm" */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <ModalContent>
@@ -577,6 +633,102 @@ export default function ProductManagement() {
         columns={columns}
         onAddNew={setAddModalOpen}
       />
+      {/* Bộ lọc */}
+      <div className="flex flex-col gap-4">
+        {/* Bộ lọc category */}
+        <div className="flex gap-2 items-center">
+          <Dropdown>
+            <DropdownTrigger>
+              <Button disableRipple variant="bordered" color="primary">
+                {selectedCategories.size > 0
+                  ? `${selectedCategories.size} danh mục đã chọn`
+                  : "Chọn danh mục"}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Category filter"
+              selectionMode="multiple"
+              selectedKeys={selectedCategories}
+              onSelectionChange={(keys) => {
+                setSelectedCategories(keys);
+                setPage(1);
+              }}
+            >
+              {categories.map((category) => (
+                <DropdownItem key={category._id}>{category.name}</DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+          {/* Hiển thị categories đã chọn */}
+          {selectedCategories.size > 0 && (
+            <div className="flex gap-1">
+              {[...selectedCategories].map((catId) => {
+                const category = categories.find((c) => c._id === catId);
+                return (
+                  category && (
+                    <Chip
+                      key={catId}
+                      color="primary"
+                      onClose={() => {
+                        const newSet = new Set(selectedCategories);
+                        newSet.delete(catId);
+                        setSelectedCategories(newSet);
+                        setPage(1);
+                      }}
+                    >
+                      {category.name}
+                    </Chip>
+                  )
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Thanh kéo giá */}
+        <div className="flex flex-col gap-2 max-w-md">
+          {/* <div className="flex justify-between">
+            <span>
+              Giá: {priceRange[0]} - {priceRange[1]}
+            </span>
+          </div> */}
+          <Slider
+            formatOptions={{
+              locale: "it-IT",
+              style: "currency",
+              currency: "VND",
+            }}
+            showTooltip={true}
+            tooltipValueFormatOptions={
+              ("it-IT", { style: "currency", currency: "VND" })
+            }
+            defaultValue={[0, 999999999]}
+            step={100000}
+            minValue={0}
+            maxValue={999999999}
+            value={priceRange}
+            onChange={(value) => {
+              setPriceRange(value);
+              setPage(1);
+            }}
+            label="Currency"
+            // trackStyle={[{ backgroundColor: "#6B46C1" }]}
+            // handleStyle={[
+            //   { borderColor: "#6B46C1" },
+            //   { borderColor: "#6B46C1" },
+            // ]}
+          />
+        </div>
+
+        {/* Nút xóa bộ lọc */}
+        {(selectedCategories.size > 0 ||
+          priceRange[0] > 0 ||
+          priceRange[1] < 999999999) && (
+          <Button variant="flat" color="danger" onPress={clearFilters}>
+            Xóa bộ lọc
+          </Button>
+        )}
+      </div>
       <TableComponent
         items={products.map((item, index) => ({
           ...item,
@@ -606,7 +758,7 @@ export default function ProductManagement() {
           setDeleteModalOpen(true);
         }}
         isLoading={productLoading || categoryLoading}
-        isSorting // Bật sorting client-side
+        isSorting
       />
     </div>
   );
