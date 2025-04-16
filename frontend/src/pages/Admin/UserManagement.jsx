@@ -3,8 +3,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import CustomModal from "../../components/Modal/CustomModal.jsx";
 import { PasswordCriteria } from "../../components/PasswordStrengthMeter";
 import DeleteModal from "../../components/Modal/DeleteModal.jsx";
-import ImagePreviewSection from "../../components/ImagePreviewSection";
-
 import {
   Spinner,
   Input,
@@ -24,8 +22,8 @@ import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import { debounce } from "lodash";
-// import { validatePassword, validateUsername } from "../../utils/validation.js";
 import CustomInputPass from "../../components/CustomInputPass.jsx";
+
 const columns = [
   { name: "STT", uid: "index" },
   { name: "Tên người dùng", uid: "username" },
@@ -76,46 +74,36 @@ export default function UserManagement() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [passwordError, setPasswordError] = useState("");
   const [usernameError, setUsernameError] = useState("");
-  // Dữ liệu cho modal Thêm
+
+  // Add modal data
   const [addUsername, setAddUsername] = useState("");
   const [addEmail, setAddEmail] = useState("");
   const [addPassword, setAddPassword] = useState("");
-  const [addImage, setAddImage] = useState(null); // Thêm ảnh cho người dùng mới
+  const [addImage, setAddImage] = useState(null);
   const [addRole, setAddRole] = useState("");
   const [addIsVerified, setAddIsVerified] = useState(false);
 
-  // Dữ liệu cho modal Sửa
+  // Edit modal data
   const [editUsername, setEditUsername] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editImage, setEditImage] = useState(null); // Thêm ảnh cho người dùng khi sửa
+  const [editImage, setEditImage] = useState(null); // File or URL string
   const [editRole, setEditRole] = useState("");
   const [editIsVerified, setEditIsVerified] = useState(false);
+  const [editImagePreview, setEditImagePreview] = useState(null); // Preview URL for new image
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-  // Hiển thị lỗi nếu có
+  const serverURL = import.meta.env.DEV ? "http://localhost:3000" : "";
+
+  // Handle error display
   useEffect(() => {
     if (error) {
       onOpen();
       console.log(error);
-      // setTimeout(() => {
-      //   clearError();
-      //   onOpenChange(false);
-      // }, 10000);
     }
-    // return () => {
-    //   clearError(); // Clear error when component unmounts
-    // }
-  }, [error, onOpen, clearError]);
+  }, [error, onOpen]);
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     await fetchUsers(page, limit);
-  //   };
-
-  //   fetchData();
-  // }, []);
-
+  // Fetch users
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -129,28 +117,47 @@ export default function UserManagement() {
       }
     };
     fetchData();
-  }, [page, limit, filterValue]);
+  }, [page, limit, filterValue, fetchUsers, searchUsersByKeyword]);
+
+  // Cleanup preview URL when editImagePreview changes
+  useEffect(() => {
+    return () => {
+      if (editImagePreview) {
+        URL.revokeObjectURL(editImagePreview);
+      }
+    };
+  }, [editImagePreview]);
 
   const debouncedSetFilterValue = useMemo(
     () => debounce((value) => setFilterValue(value), 200),
     []
   );
 
-  // Xóa lỗi khi đóng modal
-  // const handleCloseModal = () => {
-  //   clearError();
-  // };
-
   const handleInputChange = (value) => {
     setInputValue(value);
     debouncedSetFilterValue(value);
   };
 
+  // Handle image change for edit modal
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditImage(file);
+      setEditImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Handle image removal for edit modal
+  const handleRemoveImage = () => {
+    if (editImagePreview) {
+      URL.revokeObjectURL(editImagePreview);
+    }
+    setEditImage(null);
+    setEditImagePreview(null);
+  };
+
   const handleAddUser = async (e) => {
     e.preventDefault();
-    // const imageUrl = !addImage
-    //   ? await uploadImage(defaultImage)
-    //   : await uploadImage(addImage);
     try {
       const newUser = {
         username: addUsername,
@@ -159,7 +166,6 @@ export default function UserManagement() {
         role: addRole,
         isVerified: addIsVerified,
       };
-      console.log(newUser);
       await createUserByAdmin(newUser);
 
       toastCustom({
@@ -173,9 +179,8 @@ export default function UserManagement() {
       setAddRole("");
       setAddIsVerified(false);
       setAddPassword("");
-      setAddImage(null); // Reset ảnh sau khi thêm
+      setAddImage(null);
 
-      // Refresh danh sách người dùng
       await fetchUsers(page, limit);
     } catch (err) {
       toastCustom({
@@ -186,21 +191,16 @@ export default function UserManagement() {
   };
 
   const handleUpdateUser = async (e) => {
+    e.preventDefault();
     if (selectedItem) {
-      e.preventDefault();
       try {
-        // Giữ lại URL cũ nếu không thay đổi
         let imageUrl = selectedItem.image;
 
-        // Bước 1: upload ảnh nếu có
-        if (editImage !== selectedItem.image) {
+        if (editImage && editImage instanceof File) {
           imageUrl = await uploadImage(editImage);
-        } else {
-          imageUrl = selectedItem.image; // Keep old URL if no new image
         }
 
         const updated = {
-          // ...selectedItem,
           _id: selectedItem._id,
           username: editUsername,
           role: editRole,
@@ -217,9 +217,9 @@ export default function UserManagement() {
         setEditModalOpen(false);
         setEditUsername("");
         setEditEmail("");
-        setEditImage(null); // Reset ảnh sau khi cập nhật
+        setEditImage(null);
+        setEditImagePreview(null);
 
-        // Refresh danh sách người dùng
         await fetchUsers(page, limit);
       } catch (err) {
         toastCustom({
@@ -245,8 +245,6 @@ export default function UserManagement() {
       });
 
       setDeleteModalOpen(false);
-
-      // Refresh danh sách người dùng
       await fetchUsers(page, limit);
     } catch (err) {
       toastCustom({
@@ -263,7 +261,8 @@ export default function UserManagement() {
         title="Oops!"
         message={error}
       />
-      {/* Modal cho "Thêm" */}
+
+      {/* Modal for Add */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <ModalContent>
           <ModalHeader>Thêm người dùng</ModalHeader>
@@ -292,13 +291,8 @@ export default function UserManagement() {
                 isRequired
                 label="Mật khẩu"
                 value={addPassword}
-                onChange={(e) => {
-                  setAddPassword(e.target.value);
-                }}
-                // isInvalid={addPassword}
-                // errorMessage={addPassword}
+                onChange={(e) => setAddPassword(e.target.value)}
               />
-
               <Select
                 isRequired
                 className="max-w-xs"
@@ -311,7 +305,6 @@ export default function UserManagement() {
                   <SelectItem key={role}>{role}</SelectItem>
                 ))}
               </Select>
-
               <Select
                 isRequired
                 className="max-w-xs"
@@ -339,11 +332,18 @@ export default function UserManagement() {
         </ModalContent>
       </Modal>
 
-      {/* Modal cho "Sửa" */}
+      {/* Modal for Edit */}
       <Modal
         size={"3xl"}
         isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
+        onClose={() => {
+          setEditModalOpen(false);
+          if (editImagePreview) {
+            URL.revokeObjectURL(editImagePreview);
+          }
+          setEditImage(null);
+          setEditImagePreview(null);
+        }}
       >
         <ModalContent>
           <ModalHeader id="editUser">
@@ -353,23 +353,56 @@ export default function UserManagement() {
           </ModalHeader>
           <ModalBody>
             <div className="w-full flex flex-col md:flex-row gap-4">
-              {/* <div className="md:flex md:basis-5/12 w-full items-center">
-                {/* <Image
-                  alt="User Image"
-                  src={`${import.meta.env.DEV ? "http://localhost:3000" : ""}${
-                    Array.isArray(editImage) ? editImage[0] : editImage
-                  }`}
-                  isZoomed
-                  className="block w-full h-auto object-cover "
-                  loading="lazy"
-                /> */}
-              {/* </div> */}
+              <div className="md:basis-5/12 w-full">
+                {editImagePreview ? (
+                  <div className="relative group">
+                    <Image
+                      src={editImagePreview}
+                      alt="New Image Preview"
+                      className="w-full h-auto object-cover rounded-lg"
+                      isZoomed
+                    />
+                    <Button
+                      size="sm"
+                      color="danger"
+                      onPress={handleRemoveImage}
+                      className="absolute top-2 right-2 opacity-80 hover:opacity-100 z-50"
+                    >
+                      X
+                    </Button>
+                  </div>
+                ) : editImage ? (
+                  <div className="relative group">
+                    <Image
+                      src={`${serverURL}${editImage}`}
+                      alt="Old Image"
+                      className="w-full h-auto object-cover rounded-lg"
+                      isZoomed
+                    />
+                    <Button
+                      size="sm"
+                      color="danger"
+                      onPress={handleRemoveImage}
+                      className="absolute top-2 right-2 opacity-80 hover:opacity-100 z-50"
+                    >
+                      X
+                    </Button>
+                  </div>
+                ) : (
+                  <Spinner
+                    variant="dots"
+                    color="secondary"
+                    size="md"
+                    label="Chưa có ảnh..."
+                    className="mt-4"
+                  />
+                )}
+              </div>
               <div className="w-full">
                 <Form
                   encType="multipart/form-data"
                   className="space-y-4"
                   method="put"
-                  enctype="multipart/form-data"
                   onSubmit={handleUpdateUser}
                 >
                   <Input
@@ -400,7 +433,6 @@ export default function UserManagement() {
                       <SelectItem key={role}>{role}</SelectItem>
                     ))}
                   </Select>
-
                   <Select
                     isRequired
                     className="max-w-xs"
@@ -417,29 +449,27 @@ export default function UserManagement() {
                       </SelectItem>
                     ))}
                   </Select>
-
-                  {/* <Input
+                  <Input
                     label="Ảnh người dùng"
                     type="file"
-                    onChange={(e) => setEditImage(e.target.files[0])}
-                  /> */}
-                  <ImagePreviewSection editImage={editImage} 
-                  setEditImage={setEditImage} 
-                  isArray={false}
+                    accept="image/*"
+                    onChange={handleImageChange}
                   />
-                  <div className="flex flex-row grap-2">
+                  <div className="flex flex-row gap-2">
                     <Button
                       variant="flat"
-                      onPress={() => setEditModalOpen(false)}
-                      
+                      onPress={() => {
+                        setEditModalOpen(false);
+                        if (editImagePreview) {
+                          URL.revokeObjectURL(editImagePreview);
+                        }
+                        setEditImage(null);
+                        setEditImagePreview(null);
+                      }}
                     >
                       Hủy
                     </Button>
-                    <Button
-                      color="primary"
-                      type="submit"
-                      // onPress={handleUpdateUser}
-                    >
+                    <Button color="primary" type="submit">
                       Lưu
                     </Button>
                   </div>
@@ -451,7 +481,7 @@ export default function UserManagement() {
         </ModalContent>
       </Modal>
 
-      {/* Modal cho "Xóa" */}
+      {/* Modal for Delete */}
       <DeleteModal
         isOpen={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
@@ -472,31 +502,31 @@ export default function UserManagement() {
         columns={columns}
         onAddNew={setAddModalOpen}
       />
-     
-        <TableComponent
-          items={users}
-          columns={columns}
-          page={page}
-          setPage={setPage}
-          limit={limit}
-          totalPages={totalPages}
-          visibleColumns={visibleColumns}
-          onEdit={(user) => {
-            setSelectedItem(user);
-            setEditUsername(user.username);
-            setEditEmail(user.email);
-            setEditIsVerified(user.isVerified);
-            setEditRole(user.role);
-            setEditImage(user.image); // Set ảnh cũ cho modal sửa
-            setEditModalOpen(true);
-          }}
-          onDelete={(user) => {
-            setSelectedItem(user);
-            setDeleteModalOpen(true);
-          }}
-          isLoading={isLoading}
-        />
-     
+
+      <TableComponent
+        items={users}
+        columns={columns}
+        page={page}
+        setPage={setPage}
+        limit={limit}
+        totalPages={totalPages}
+        visibleColumns={visibleColumns}
+        onEdit={(user) => {
+          setSelectedItem(user);
+          setEditUsername(user.username);
+          setEditEmail(user.email);
+          setEditIsVerified(user.isVerified);
+          setEditRole(user.role);
+          setEditImage(user.image);
+          setEditImagePreview(null);
+          setEditModalOpen(true);
+        }}
+        onDelete={(user) => {
+          setSelectedItem(user);
+          setDeleteModalOpen(true);
+        }}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

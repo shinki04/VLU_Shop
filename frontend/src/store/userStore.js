@@ -311,7 +311,7 @@ const useUserStore = create(
             withCredentials: true,
           });
           set({ isLoading: false });
-          return res.data.images[0]; // Trả về URL ảnh
+          return res.data.images[0].url; // Trả về URL ảnh
         } catch (err) {
           set({
             error: err.response?.data?.message || "Image upload failed",

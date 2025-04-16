@@ -7,6 +7,11 @@ const PRODUCT_API =
     ? "http://localhost:3000/api/products"
     : "/api/products";
 
+    const UPLOAD_URL =
+    import.meta.env.MODE === "development"
+      ? "http://localhost:3000/api/upload"
+      : "/api/upload";
+
 const useProductStore = create((set) => ({
   products: [],
   product: null,
@@ -32,8 +37,10 @@ const useProductStore = create((set) => ({
     } catch (error) {
       set({
         isLoading: false,
-        error: error.response?.data.message || error.message,
+        error:
+          error.response?.data.message || error.message || "Error add data",
       });
+      throw error;
     }
   },
 
@@ -56,6 +63,7 @@ const useProductStore = create((set) => ({
         isLoading: false,
         error: error.response?.data.message || error.message,
       });
+      throw error;
     }
   },
 
@@ -73,6 +81,7 @@ const useProductStore = create((set) => ({
         isLoading: false,
         error: error.response?.data.message || error.message,
       });
+      throw error;
     }
   },
 
@@ -87,6 +96,7 @@ const useProductStore = create((set) => ({
         isLoading: false,
         error: error.response?.data.message || error.message,
       });
+      throw error;
     }
   },
 
@@ -103,6 +113,7 @@ const useProductStore = create((set) => ({
         isLoading: false,
         error: error.response?.data.message || error.message,
       });
+      throw error;
     }
   },
 
@@ -127,6 +138,7 @@ const useProductStore = create((set) => ({
         isLoading: false,
         error: error.response?.data.message || error.message,
       });
+      throw error;
     }
   },
 
@@ -141,6 +153,40 @@ const useProductStore = create((set) => ({
         isLoading: false,
         error: error.response?.data.message || error.message,
       });
+      throw error;
+    }
+  },
+
+  uploadProductImages: async (images) => {
+    set({ isLoading: true, error: null });
+    try {
+      const formData = new FormData();
+
+      // Append all images to the form data
+      images.forEach((image) => {
+        formData.append("images", image); // Assumes that the backend expects 'images' as the field name
+      });
+      // formData.append("images", images);
+      // Send multiple images to the backend
+      const res = await axios.post(`${UPLOAD_URL}?type=multiple`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+      });
+
+      // Assuming the backend returns an array of image URLs
+      const imageUrls = res.data.images; // Backend should return an array of image URLs
+
+      // Update the product with new images
+
+      set({ isLoading: false });
+
+      return imageUrls; // Return the image URLs
+    } catch (err) {
+      set({
+        error: err.response?.data?.message || "Image upload failed",
+        isLoading: false,
+      });
+      throw err;
     }
   },
 }));

@@ -1,10 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import useProductStore from "../../store/productStore";
-import CustomModal from "../../components/Modal/CustomModal";
-import DeleteModal from "../../components/Modal/DeleteModal";
-import ImagePreviewSection from "../../components/ImagePreviewSection";
 import useCategoryStore from "../../store/categoryStore";
-
+import CustomModal from "../../components/Modal/CustomModal.jsx";
+import DeleteModal from "../../components/Modal/DeleteModal.jsx";
+import ImagePreviewSection from "../../components/ImagePreviewSection";
 import {
   Spinner,
   Input,
@@ -14,34 +13,33 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  useDisclosure,
-  Image,
   Form,
-  SelectItem,
   Select,
+  SelectItem,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import { debounce } from "lodash";
+
 const columns = [
   { name: "STT", uid: "index" },
-  { name: "Name", uid: "name" },
-  { name: "images", uid: "images" },
-  { name: "Description", uid: "description" },
-  { name: "NumReviews", uid: "numReviews" },
-  { name: "Price", uid: "price" },
-  { name: "CountInStock", uid: "countInStock" },
-  { name: "Action", uid: "actions" },
+  { name: "Tên sản phẩm", uid: "name" },
+  { name: "Ảnh", uid: "images" },
+  { name: "Giá", uid: "price" },
+  { name: "Danh mục", uid: "category" },
+  { name: "Tồn kho", uid: "countInStock" },
+  { name: "Hành động", uid: "actions" },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = [
   "index",
   "name",
   "images",
-  "description",
-  "numReviews",
   "price",
+  "category",
   "countInStock",
   "actions",
 ];
@@ -50,33 +48,22 @@ export default function ProductManagement() {
   const {
     products,
     fetchAllProducts,
+    filterProducts,
     addProduct,
     updateProduct,
     removeProduct,
-
-    fetchProductById,
-    filterProducts,
-
-    isLoading: isProductLoading,
+    isLoading: productLoading,
     error: productError,
-    total: productTotal,
-    clearError: clearProductError,
+    total,
+    uploadProductImages,
   } = useProductStore();
 
   const {
     categories,
-    isLoading,
-    error,
-    total,
     fetchCategories,
-    searchCategoryByKeyword,
-    isLoading: isCategoryLoading,
+    isLoading: categoryLoading,
     error: categoryError,
-    total: categoryTotal,
-    clearError: clearCategoryError,
   } = useCategoryStore();
-
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -85,7 +72,6 @@ export default function ProductManagement() {
   );
   const [inputValue, setInputValue] = useState("");
   const [filterValue, setFilterValue] = useState("");
-  const [searchCategory, setSearchCategory] = useState("");
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -97,39 +83,63 @@ export default function ProductManagement() {
   const [addName, setAddName] = useState("");
   const [addDescription, setAddDescription] = useState("");
   const [addPrice, setAddPrice] = useState("");
-  const [addImages, setAddImages] = useState(null); // Thêm ảnh cho người dùng mới
   const [addCategory, setAddCategory] = useState("");
-  const [addCountInStock, setAddCountInStock] = useState(false);
+  const [addCountInStock, setAddCountInStock] = useState("");
   const [addBrand, setAddBrand] = useState("");
+  const [addImages, setAddImages] = useState([]);
+
   // Dữ liệu cho modal Sửa
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editCountInStock, setEditCountInStock] = useState("");
+  const [editBrand, setEditBrand] = useState("");
+  const [editImages, setEditImages] = useState([]);
 
-  // Hiển thị lỗi nếu có
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  // Lấy danh mục khi component mount
   useEffect(() => {
-    if (error) {
-      onOpen();
-      console.log(error);
-    }
-  }, [error, onOpen]);
+    const loadCategories = async () => {
+      try {
+        await fetchCategories(1, 100); // Lấy tối đa 100 danh mục
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    loadCategories();
+  }, [fetchCategories]);
 
+  // Hiển thị lỗi nếu có (từ product hoặc category store)
+  useEffect(() => {
+    if (productError || categoryError) {
+      onOpen();
+    }
+  }, [productError, categoryError, onOpen]);
+
+  // Lấy dữ liệu sản phẩm
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (filterValue) {
-          await filterProducts(filterValue, page, limit);
+          await filterProducts(
+            { search: filterValue },
+            null,
+            null,
+            "desc",
+            page,
+            limit
+          );
         } else {
           await fetchAllProducts(page, limit);
         }
       } catch (err) {
-        console.error("Error fetching users:", err);
+        console.error("Error fetching products:", err);
       }
     };
     fetchData();
-  }, [page, limit, filterValue,fetchAllProducts, filterProducts]);
-
-  // Fetch categories khi mount
-  useEffect(() => {
-    fetchCategories(1, 100);
-  }, [fetchCategories]);
+  }, [page, limit, filterValue, fetchAllProducts, filterProducts]);
 
   const debouncedSetFilterValue = useMemo(
     () => debounce((value) => setFilterValue(value), 200),
@@ -141,60 +151,142 @@ export default function ProductManagement() {
     debouncedSetFilterValue(value);
   };
 
-  // Xử lý mở modal "Sửa"
-  const handleEdit = (item) => {
-    setSelectedItem(item);
-    // setEditName(item.name);
-    setEditModalOpen(true);
-  };
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    try {
+      console.log(addImages);
 
-  // Xử lý mở modal "Xóa"
-  const handleDelete = (item) => {
-    setSelectedItem(item);
-    setDeleteModalOpen(true);
-  };
-  // Xử lý xác nhận xóa
-  const handleConfirmDelete = async () => {
-    if (selectedItem) {
-      try {
-        await removeProduct(selectedItem._id);
-        toastCustom({
-          title: "Successfully",
-          description: "Delete success",
-        });
-        // Refresh danh sách sau khi xóa
-        if (filterValue) {
-          await searchCategoryByKeyword(filterValue, page, limit);
-        } else {
-          await fetchCategories(page, limit);
-        }
-      } catch (err) {
-        toastCustom({
-          error: err.message || "Error deleting category",
-        });
-      }
-      setDeleteModalOpen(false);
-      setSelectedItem(null);
+      // Gọi hàm uploadProductImages để tải ảnh lên và nhận phản hồi
+      const uploadResponse = await uploadProductImages(addImages);
+      console.log(uploadResponse);
+
+      // Lấy mảng URL ảnh từ phản hồi
+      const imageUrls = uploadResponse.map((image) => image.url); // Trích xuất các URL từ mảng ảnh
+
+      console.log(imageUrls);
+      const productData = {
+        name: addName,
+        description: addDescription,
+        price: parseFloat(addPrice),
+        category: addCategory,
+        countInStock: parseInt(addCountInStock),
+        brand: addBrand,
+        images: imageUrls,
+      };
+      console.log(productData);
+
+      await addProduct(productData);
+
+      toastCustom({
+        title: "Successfully",
+        description: "Product added successfully!",
+      });
+
+      setAddModalOpen(false);
+      setAddName("");
+      setAddDescription("");
+      setAddPrice("");
+      setAddCategory("");
+      setAddCountInStock("");
+      setAddBrand("");
+      setAddImages([]);
+
+      // Refresh danh sách sản phẩm
+      await fetchAllProducts(page, limit);
+    } catch (err) {
+      toastCustom({
+        title: "Error",
+        error: err.message || "Error adding product",
+      });
     }
   };
 
-  const handleSort = async (sortKey, sortOrder) => {
-    await fetchAllProducts(page, limit, sortKey, sortOrder);
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault();
+    if (selectedItem) {
+      try {
+        console.log(imageUrls);
+        // Nếu không có ảnh mới, giữ nguyên ảnh cũ
+        const imageUrls =
+          editImages.length > 0 ? editImages : selectedItem.images;
+        // Nếu có ảnh mới, upload ảnh mới và lấy URL
+        if (editImages.length > 0) {
+          const uploadedImages = await uploadProductImages(editImages);
+          console.log(uploadedImages);
+        }
+        const updatedData = {
+          name: editName,
+          description: editDescription,
+          price: parseFloat(editPrice),
+          category: editCategory,
+          countInStock: parseInt(editCountInStock),
+          brand: editBrand,
+          images: imageUrls,
+        };
+
+        await updateProduct(selectedItem._id, updatedData);
+
+        toastCustom({
+          title: "Successfully",
+          description: "Product updated successfully!",
+        });
+
+        setEditModalOpen(false);
+        setEditName("");
+        setEditDescription("");
+        setEditPrice("");
+        setEditCategory("");
+        setEditCountInStock("");
+        setEditBrand("");
+        setEditImages([]);
+
+        // Refresh danh sách sản phẩm
+        await fetchAllProducts(page, limit);
+      } catch (err) {
+        toastCustom({
+          title: "Error",
+          error: err.message || "Error updating product",
+        });
+      }
+    } else {
+      toastCustom({
+        title: "No product",
+        error: "Error updating product",
+      });
+    }
   };
+
+  const handleDeleteProduct = async () => {
+    try {
+      await removeProduct(selectedItem._id);
+
+      toastCustom({
+        title: "Successfully",
+        description: "Product deleted successfully!",
+      });
+
+      setDeleteModalOpen(false);
+
+      // Refresh danh sách sản phẩm
+      await fetchAllProducts(page, limit);
+    } catch (err) {
+      toastCustom({
+        title: "Error",
+        error: err.message || "Error deleting product",
+      });
+    }
+  };
+
   return (
-    <div>
+    <div className="">
       <CustomModal
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         title="Oops!"
-        message={error}
+        message={productError || categoryError}
       />
       {/* Modal cho "Thêm" */}
-      <Modal
-        size="full"
-        isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-      >
+      <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <ModalContent>
           <ModalHeader>Thêm sản phẩm</ModalHeader>
           <ModalBody>
@@ -202,59 +294,66 @@ export default function ProductManagement() {
               encType="multipart/form-data"
               className="space-y-4"
               method="post"
-              onSubmit={handleAddUser}
+              onSubmit={handleAddProduct}
             >
               <Input
-                label="Tên người dùng"
-                value={addUsername}
-                onChange={(e) => setAddUsername(e.target.value)}
-                placeholder="Nhập tên người dùng"
+                isRequired
+                label="Tên sản phẩm"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                placeholder="Nhập tên sản phẩm"
+              />
+              <Textarea
+                label="Mô tả"
+                value={addDescription}
+                onChange={(e) => setAddDescription(e.target.value)}
+                placeholder="Nhập mô tả sản phẩm"
               />
               <Input
-                label="Email"
-                type="email"
                 isRequired
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
-                placeholder="Nhập email"
+                label="Giá"
+                type="number"
+                value={addPrice}
+                onChange={(e) => setAddPrice(e.target.value)}
+                placeholder="Nhập giá sản phẩm"
+                min="0"
               />
-              <CustomInputPass
-                isRequired
-                label="Mật khẩu"
-                value={addPassword}
-                onChange={(e) => {
-                  setAddPassword(e.target.value);
-                }}
-                // isInvalid={addPassword}
-                // errorMessage={addPassword}
-              />
-
               <Select
                 isRequired
                 className="max-w-xs"
-                label="Role"
+                label="Danh mục"
                 fullWidth
-                selectedKeys={[addRole]}
-                onSelectionChange={(keys) => setAddRole(Array.from(keys)[0])}
+                selectedKeys={[addCategory]}
+                onSelectionChange={(keys) =>
+                  setAddCategory(Array.from(keys)[0])
+                }
+                isLoading={categoryLoading}
               >
-                {["customer", "admin"].map((role) => (
-                  <SelectItem key={role}>{role}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat._id}>{cat.name}</SelectItem>
                 ))}
               </Select>
-
-              <Select
+              <Input
                 isRequired
-                className="max-w-xs"
-                label="Đã xác thực ?"
-                fullWidth
-                selectedKeys={[addIsVerified ? "true" : "false"]}
-                onSelectionChange={(keys) => setAddIsVerified(keys.has("true"))}
-              >
-                {["true", "false"].map((addIsVerified) => (
-                  <SelectItem key={addIsVerified}>{addIsVerified}</SelectItem>
-                ))}
-              </Select>
-              <PasswordCriteria password={addPassword} />
+                label="Số lượng tồn kho"
+                type="number"
+                value={addCountInStock}
+                onChange={(e) => setAddCountInStock(e.target.value)}
+                placeholder="Nhập số lượng tồn kho"
+                min="0"
+              />
+              <Input
+                isRequired
+                label="Thương hiệu"
+                value={addBrand}
+                onChange={(e) => setAddBrand(e.target.value)}
+                placeholder="Nhập thương hiệu"
+              />
+              <ImagePreviewSection
+                editImage={addImages}
+                setEditImage={setAddImages}
+                isArray={true}
+              />
               <div className="flex flex-row gap-3">
                 <Button variant="flat" onPress={() => setAddModalOpen(false)}>
                   Hủy
@@ -270,14 +369,112 @@ export default function ProductManagement() {
       </Modal>
 
       {/* Modal cho "Sửa" */}
+      <Modal
+        size={"3xl"}
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+      >
+        <ModalContent>
+          <ModalHeader id="editProduct">
+            <p className="flex flex-col gap-1 leading-relaxed">
+              Chỉnh sửa sản phẩm
+            </p>
+          </ModalHeader>
+          <ModalBody>
+            <div className="w-full flex flex-col md:flex-row gap-4">
+              <div className="w-full">
+                <Form
+                  encType="multipart/form-data"
+                  className="space-y-4"
+                  method="put"
+                  onSubmit={handleUpdateProduct}
+                >
+                  <Input
+                    isRequired
+                    label="Tên sản phẩm"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Nhập tên sản phẩm"
+                  />
+                  <Textarea
+                    label="Mô tả"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Nhập mô tả sản phẩm"
+                  />
+                  <Input
+                    isRequired
+                    label="Giá"
+                    type="number"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    placeholder="Nhập giá sản phẩm"
+                    min="0"
+                  />
+                  <Select
+                    isRequired
+                    className="max-w-xs"
+                    label="Danh mục"
+                    fullWidth
+                    selectedKeys={[editCategory]}
+                    onSelectionChange={(keys) =>
+                      setEditCategory(Array.from(keys)[0])
+                    }
+                    isLoading={categoryLoading}
+                  >
+                    {categories.map((cat) => (
+                      <SelectItem key={cat._id}>{cat.name}</SelectItem>
+                    ))}
+                  </Select>
+                  <Input
+                    isRequired
+                    label="Số lượng tồn kho"
+                    type="number"
+                    value={editCountInStock}
+                    onChange={(e) => setEditCountInStock(e.target.value)}
+                    placeholder="Nhập số lượng tồn kho"
+                    min="0"
+                  />
+                  <Input
+                    isRequired
+                    label="Thương hiệu"
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value)}
+                    placeholder="Nhập thương hiệu"
+                  />
+                  <ImagePreviewSection
+                    editImage={editImages}
+                    setEditImage={setEditImages}
+                    isArray={true}
+                  />
+                  <div className="flex flex-row gap-2">
+                    <Button
+                      variant="flat"
+                      onPress={() => setEditModalOpen(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button color="primary" type="submit">
+                      Lưu
+                    </Button>
+                  </div>
+                </Form>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter></ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Modal cho "Xóa" */}
       <DeleteModal
         isOpen={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
+        onDelete={handleDeleteProduct}
         itemName={selectedItem?.name}
       />
 
-      <h1 className="text-2xl font-semibold mb-4">Quản lý Sản phẩm</h1>
+      <h1 className="text-2xl font-semibold mb-4">Quản lý sản phẩm</h1>
 
       <TopContent
         filterValue={inputValue}
@@ -287,21 +484,38 @@ export default function ProductManagement() {
         limit={limit}
         setLimit={setLimit}
         setPage={setPage}
-        // onAddNew={handleAdd}
         columns={columns}
+        onAddNew={setAddModalOpen}
       />
+
       <TableComponent
-        items={products} // Sử dụng categories trực tiếp từ store
+        items={products.map((item, index) => ({
+          ...item,
+          index: (page - 1) * limit + index + 1,
+          category: item.category?.name || item.category,
+        }))}
         columns={columns}
         page={page}
         setPage={setPage}
         limit={limit}
         totalPages={totalPages}
         visibleColumns={visibleColumns}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        isLoading={isLoading}
-        onSort={handleSort}
+        onEdit={(product) => {
+          setSelectedItem(product);
+          setEditName(product.name);
+          setEditDescription(product.description);
+          setEditPrice(product.price);
+          setEditCategory(product.category?._id || product.category);
+          setEditCountInStock(product.countInStock);
+          setEditBrand(product.brand);
+          setEditImages(product.images);
+          setEditModalOpen(true);
+        }}
+        onDelete={(product) => {
+          setSelectedItem(product);
+          setDeleteModalOpen(true);
+        }}
+        isLoading={productLoading || categoryLoading}
       />
     </div>
   );
