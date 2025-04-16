@@ -303,3 +303,36 @@ export const getUserReviews = asyncHandler(async (req, res) => {
     });
   }
 });
+
+export const getAllReviews = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, keyword = "" } = req.query;
+
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+
+  const query = keyword
+    ? {
+        $or: [
+          { comment: { $regex: keyword, $options: "i" } },
+          { name: { $regex: keyword, $options: "i" } },
+        ],
+      }
+    : {};
+
+  const reviews = await Review.find(query)
+    .populate("user", "username email")
+    .populate("product", "name image")
+    .sort({ createdAt: -1 })
+    .skip((pageNum - 1) * limitNum)
+    .limit(limitNum);
+
+  const total = await Review.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    reviews,
+    totalReviews: total,
+    totalPages: Math.ceil(total / limitNum),
+    currentPage: pageNum,
+  });
+});

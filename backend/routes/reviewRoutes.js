@@ -5,6 +5,7 @@ import {
   getProductReviews,
   deleteProductReview,
   getUserReviews,
+  getAllReviews,
 } from "../controllers/reviewController.js";
 
 import { authMiddleware, isAdmin } from "../middlewares/authMiddleware.js";
@@ -12,8 +13,8 @@ import { authMiddleware, isAdmin } from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 // Định nghĩa các route với phương thức HTTP khác nhau cho cùng một route
-
-router.route("/user").get(authMiddleware,getUserReviews); // GET để lấy tất cả reviews
+router.get("/", authMiddleware, isAdmin, getAllReviews); // GET để lấy tất cả reviews từ TẤT CẢ user
+router.route("/user").get(authMiddleware, getUserReviews); // GET để lấy tất cả reviews từ MỘT user
 
 router
   .route("/:id")
