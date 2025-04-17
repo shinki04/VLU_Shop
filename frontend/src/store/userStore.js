@@ -280,6 +280,7 @@ const useUserStore = create(
         try {
           const res = await axios.get(`${USERS_URL}/search`, {
             params: { q, page, limit },
+            headers: { "Cache-Control": "no-cache" },
           });
           set({
             users: res.data.users,

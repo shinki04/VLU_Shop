@@ -407,12 +407,9 @@ export const searchProductsWithAvgRating = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Aggregation pipeline
-    const pipeline = [
-      // Bước 1: Lọc sản phẩm theo điều kiện (bao gồm tên sản phẩm nếu có keyword)
+    // Clone pipeline trước khi $facet
+    const basePipeline = [
       { $match: matchProduct },
-
-      // Bước 2: Liên kết với reviews để lấy thông tin đánh giá
       {
         $lookup: {
           from: "reviews",
@@ -421,8 +418,6 @@ export const searchProductsWithAvgRating = asyncHandler(async (req, res) => {
           as: "reviews",
         },
       },
-
-      // Bước 3: Nếu có keyword, tìm kiếm trên username trong reviews
       ...(keyword
         ? [
             {
@@ -436,25 +431,21 @@ export const searchProductsWithAvgRating = asyncHandler(async (req, res) => {
             {
               $match: {
                 $or: [
-                  { name: { $regex: keyword, $options: "i" } }, // Tên sản phẩm
+                  { name: { $regex: keyword, $options: "i" } },
                   {
                     "reviewUsers.username": { $regex: keyword, $options: "i" },
-                  }, // Tên người dùng
+                  },
                 ],
               },
             },
           ]
         : []),
-
-      // Bước 4: Tính trung bình rating và số lượng review
       {
         $addFields: {
-          avgRating: { $ifNull: [{ $avg: "$reviews.rating" }, 0] }, // Trả về 0 nếu không có đánh giá
-          reviewCount: {  $size: "$reviews" },
+          avgRating: { $ifNull: [{ $avg: "$reviews.rating" }, 0] },
+          reviewCount: { $size: "$reviews" },
         },
       },
-
-      // Bước 5: Lọc theo ratingRange
       {
         $match: {
           reviewCount: { $gt: 0 },
@@ -464,8 +455,11 @@ export const searchProductsWithAvgRating = asyncHandler(async (req, res) => {
           },
         },
       },
+    ];
 
-      // Bước 6: Phân trang và sắp xếp
+    // Đếm total sản phẩm
+    const result = await Product.aggregate([
+      ...basePipeline,
       {
         $facet: {
           metadata: [{ $count: "total" }],
@@ -485,14 +479,15 @@ export const searchProductsWithAvgRating = asyncHandler(async (req, res) => {
           ],
         },
       },
-    ];
+      {
+        $addFields: {
+          total: { $arrayElemAt: ["$metadata.total", 0] },
+        },
+      },
+    ]);
 
-    // Thực thi aggregation
-    const products = await Product.aggregate(pipeline);
-
-    // Xử lý kết quả
-    const total = products[0].metadata[0]?.total || 0;
-    const result = products[0].data;
+    const total = result[0]?.total || 0;
+    const products = result[0]?.data || [];
 
     res.status(200).json({
       success: true,
@@ -501,7 +496,7 @@ export const searchProductsWithAvgRating = asyncHandler(async (req, res) => {
       limit: limitNum,
       totalPages: Math.ceil(total / limitNum),
       totalProducts: total,
-      products: result,
+      products,
     });
   } catch (error) {
     console.error("Lỗi tìm kiếm sản phẩm:", error);

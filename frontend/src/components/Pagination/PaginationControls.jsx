@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   Pagination,
   PaginationItem,
@@ -7,6 +7,14 @@ import {
 } from "@heroui/react";
 
 export const PaginationControls = ({ page, setPage, totalPages }) => {
+  // Sử dụng useCallback để tránh tạo hàm mới mỗi khi component re-render
+  const handlePageChange = useCallback((newPage) => {
+    if (newPage !== page) {
+      console.log(`PaginationControls: Changing page from ${page} to ${newPage}`);
+      setPage(newPage);
+    }
+  }, [page, setPage]);
+
   return totalPages > 1 ? (
     <div className="flex justify-center">
       <Pagination
@@ -14,7 +22,7 @@ export const PaginationControls = ({ page, setPage, totalPages }) => {
         isCompact
         total={totalPages}
         page={page}
-        onChange={setPage}
+        onChange={handlePageChange} // Sử dụng hàm đã được memoized
         renderItem={({
           value,
           isActive,
@@ -22,14 +30,18 @@ export const PaginationControls = ({ page, setPage, totalPages }) => {
           key,
           onPrevious,
           onNext,
-          setPage,
+          setPage: paginationSetPage,
         }) => {
           if (value === PaginationItemType.PREV) {
             return (
-              <PaginationItem>
+              <PaginationItem key={key}>
                 <Button
                   variant="ghost"
-                  onPress={onPrevious}
+                  onPress={() => {
+                    if (page > 1) {
+                      handlePageChange(page - 1);
+                    }
+                  }}
                   disabled={page === 1}
                 >
                   Trước
@@ -40,10 +52,14 @@ export const PaginationControls = ({ page, setPage, totalPages }) => {
 
           if (value === PaginationItemType.NEXT) {
             return (
-              <PaginationItem>
+              <PaginationItem key={key}>
                 <Button
                   variant="ghost"
-                  onPress={onNext}
+                  onPress={() => {
+                    if (page < totalPages) {
+                      handlePageChange(page + 1);
+                    }
+                  }}
                   disabled={page === totalPages}
                 >
                   Sau
@@ -57,10 +73,10 @@ export const PaginationControls = ({ page, setPage, totalPages }) => {
           }
 
           return (
-            <PaginationItem isActive={isActive}>
+            <PaginationItem key={key} isActive={isActive}>
               <Button
                 variant="ghost"
-                onPress={() => setPage(value)}
+                onPress={() => handlePageChange(value)}
                 className={isActive ? "font-bold text-blue-600" : ""}
               >
                 {value}

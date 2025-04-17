@@ -43,9 +43,9 @@ import { TopContent } from "../../components/Table/TopContent";
 import { debounce } from "lodash";
 
 const columns = [
-  { name: "STT", uid: "index" },
-  { name: "Tên danh mục", uid: "name" },
-  { name: "Action", uid: "actions" },
+  { name: "STT", uid: "index", sortable: true },
+  { name: "Tên danh mục", uid: "name", sortable: true },
+  { name: "Action", uid: "actions", sortable: true },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["index", "name", "actions"];
@@ -112,7 +112,13 @@ export default function CategoryManagement() {
     const fetchData = async () => {
       try {
         if (filterValue) {
-          await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
+          await searchCategoryByKeyword(
+            filterValue,
+            page,
+            limit,
+            sortOrder,
+            sortKey
+          );
         } else {
           await fetchCategories(page, limit);
         }
@@ -121,7 +127,15 @@ export default function CategoryManagement() {
       }
     };
     fetchData();
-  }, [page, limit, filterValue, sortKey, sortOrder, fetchCategories, searchCategoryByKeyword]);
+  }, [
+    page,
+    limit,
+    filterValue,
+    sortKey,
+    sortOrder,
+    fetchCategories,
+    searchCategoryByKeyword,
+  ]);
 
   // Debounced filter value update
   const debouncedSetFilterValue = useMemo(
@@ -163,7 +177,13 @@ export default function CategoryManagement() {
         description: "Add success",
       });
       if (filterValue) {
-        await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
+        await searchCategoryByKeyword(
+          filterValue,
+          page,
+          limit,
+          sortOrder,
+          sortKey
+        );
       } else {
         await fetchCategories(page, limit);
       }
@@ -192,7 +212,13 @@ export default function CategoryManagement() {
           description: "Update success",
         });
         if (filterValue) {
-          await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
+          await searchCategoryByKeyword(
+            filterValue,
+            page,
+            limit,
+            sortOrder,
+            sortKey
+          );
         } else {
           await fetchCategories(page, limit);
         }
@@ -221,7 +247,13 @@ export default function CategoryManagement() {
           description: "Delete success",
         });
         if (filterValue) {
-          await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
+          await searchCategoryByKeyword(
+            filterValue,
+            page,
+            limit,
+            sortOrder,
+            sortKey
+          );
         } else {
           await fetchCategories(page, limit);
         }
@@ -318,7 +350,7 @@ export default function CategoryManagement() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         isLoading={isLoading}
-        isSorting
+        isSorting={true}
         onSort={handleSort}
       />
     </div>

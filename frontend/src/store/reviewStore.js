@@ -146,19 +146,29 @@ const useReviewStore = create((set, get) => ({
   },
 
   // Get all reviews (admin or general use) with optional keyword search
-  getAllReviews: async (page = 1, limit = 10, keyword = "") => {
+  getAllReviews: async (page = 1, limit = 10, keyword = "", sortKey = "", sortOrder = "asc") => {
     set({ isLoading: true, error: null, message: null });
     try {
       const response = await axios.get(`${REVIEW_API}`, {
-        params: { page, limit, keyword },
+        params: { 
+          page, 
+          limit,
+          keyword,
+          sortKey,
+          sortOrder
+        },
+        headers: { "Cache-Control": "no-cache" },
       });
+      console.log("getAllReviews response:", response.data);
       set({
+        reviews: response.data.reviews,
         allReviews: response.data.reviews,
         totalReviews: response.data.totalReviews,
         totalPages: response.data.totalPages,
-        currentPage: response.data.currentPage,
+        // Không cập nhật currentPage từ response để tránh xung đột với state trong component
         isLoading: false,
       });
+      return response.data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Lỗi khi lấy tất cả đánh giá",
@@ -180,6 +190,16 @@ const useReviewStore = create((set, get) => ({
   }) => {
     set({ isLoading: true, error: null, message: null });
     try {
+      console.log("Calling API with params:", {
+        productids: productIds?.join(","),
+        ratingRange,
+        keyword,
+        page,
+        limit,
+        sortKey,
+        sortOrder,
+      });
+      
       const response = await axios.get(`${REVIEW_API}/filter`, {
         params: {
           productids: productIds?.join(","), // Chuyển đổi mảng thành chuỗi
@@ -190,14 +210,16 @@ const useReviewStore = create((set, get) => ({
           sortKey,
           sortOrder,
         },
+        headers: { "Cache-Control": "no-cache" },
       });
+      console.log("searchProductsWithAvgRating response:", response.data);
+
       set({
         searchedProducts: response.data.products,
-        totalReviews: response.data.totalProducts,
+        totalReviews: response.data.totalReviews,
         totalPages: response.data.totalPages,
-        currentPage: response.data.currentPage,
         isLoading: false,
-        
+        // Không cập nhật page và currentPage từ response để tránh xung đột với state trong component
       });
       return response.data;
     } catch (error) {
@@ -208,7 +230,6 @@ const useReviewStore = create((set, get) => ({
       throw error;
     }
   },
-
 }));
 
 export default useReviewStore;

@@ -18,6 +18,7 @@ import UserManagement from "./pages/Admin/UserManagement";
 import NotFound from "./pages/NotFound";
 import ProductManagement from "./pages/Admin/ProductManagement";
 import ReviewManagement from "./pages/Admin/reviewManagement";
+import OrderManagement from "./pages/Admin/OrderManagement";
 import { Rotate3D } from "lucide-react";
 // redirect authenticated users to the home page
 // const RedirectAuthenticatedUser = ({ children }) => {
@@ -83,6 +84,9 @@ function App() {
               <Route path="users" element={<UserManagement />} />
               <Route path="products" element={<ProductManagement />} />
               <Route path="reviews" element={<ReviewManagement />} />
+              <Route path="reviews" element={<ReviewManagement />} />
+              <Route path="orders" element={<OrderManagement />} />
+             
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

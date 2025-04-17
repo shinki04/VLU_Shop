@@ -29,12 +29,13 @@ import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import StarSlider from "../../components/StarSlider";
+import { set } from "lodash";
 const columns = [
   { name: "STT", uid: "index" },
   { name: "Sản phẩm", uid: "product", sortable: true },
   { name: "Người dùng", uid: "username", sortable: true },
   { name: "Đánh giá", uid: "rating", sortable: true },
-  { name: "Bình luận", uid: "comment" },
+  { name: "Bình luận", uid: "comment", sortable: true },
   { name: "Hành động", uid: "actions" },
 ];
 
@@ -80,6 +81,7 @@ export default function ReviewManagement() {
   const [searchValue, setSearchValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [ratingRange, setRatingRange] = useState([0, 5]);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -103,20 +105,25 @@ export default function ReviewManagement() {
     loadProducts();
   }, [fetchAllProducts]);
 
-  // Fetch reviews when page, limit, filters, or sorting changes
+  // Sửa lại useEffect để tránh gọi API nhiều lần
+  // Modify the useEffect to ensure we're sending the correct page
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
+      // Nếu đang có request, không gửi request mới
+      if (isRequesting) return;
+
+      setIsRequesting(true);
       try {
         const productIds = [...selectedProducts];
-        // console.log("API Params:", {
-        //   productIds,
-        //   ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
-        //   keyword: searchValue,
-        //   sortKey: sortKey || "createdAt",
-        //   sortOrder,
-        //   page,
-        //   limit,
-        // });
+        console.log(
+          `ReviewManagement: Fetching data for page ${page}, limit ${limit}`
+        );
+
+        // Thêm timestamp để tránh cache
+        const timestamp = new Date().getTime();
+
         if (
           searchValue ||
           selectedProducts.size > 0 ||
@@ -124,29 +131,47 @@ export default function ReviewManagement() {
           ratingRange[1] < 5 ||
           sortKey
         ) {
-          await searchProductsWithAvgRating({
-            productIds: productIds.length > 0 ? productIds : undefined,
-            ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
-            keyword: searchValue || undefined,
-            sortKey: sortKey || "createdAt",
-            sortOrder,
-            page,
-            limit,
-          });
+          if (isMounted) {
+            await searchProductsWithAvgRating({
+              productIds: productIds.length > 0 ? productIds : undefined,
+              ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
+              keyword: searchValue || undefined,
+              page: page,
+              limit: limit,
+              sortKey: sortKey || "createdAt",
+              sortOrder,
+              _t: timestamp, // Thêm timestamp để tránh cache
+            });
+          }
         } else {
-          await getAllReviews(page, limit, searchValue, sortKey, sortOrder);
+          if (isMounted) {
+            await getAllReviews(
+              page,
+              limit,
+              searchValue,
+              sortKey,
+              sortOrder,
+              timestamp
+            );
+          }
         }
-        // console.log("API Response:", {
-        //   searchedProducts,
-        //   totalReviews,
-        //   totalPages,
-        // });
       } catch (err) {
-        console.error("Error fetching reviews:", err);
-        setErrorMess(err.message || "Error fetching reviews");
+        if (isMounted) {
+          console.error("Error fetching reviews:", err);
+          setErrorMess(err.message || "Error fetching reviews");
+        }
+      } finally {
+        if (isMounted) {
+          setIsRequesting(false);
+        }
       }
     };
+
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [
     page,
     limit,
@@ -155,8 +180,8 @@ export default function ReviewManagement() {
     searchValue,
     sortKey,
     sortOrder,
-    getAllReviews,
     searchProductsWithAvgRating,
+    getAllReviews,
   ]);
 
   // Show error modal if there's an error
@@ -169,8 +194,8 @@ export default function ReviewManagement() {
   // Handle search input change
   const handleInputChange = (value) => {
     setInputValue(value);
-    setSearchValue(value); // Bỏ debounce để kiểm tra
-    setPage(1);
+    setSearchValue(value);
+    setPage(1); // Chỉ reset page khi người dùng thực sự thay đổi giá trị tìm kiếm
   };
 
   // Clear filters
@@ -184,29 +209,23 @@ export default function ReviewManagement() {
     setPage(1);
   };
 
-  // Handle sorting
-  const handleSort = async (newSortKey, newSortOrder) => {
-    try {
-      if (newSortKey !== sortKey || newSortOrder !== sortOrder) {
-        setSortKey(newSortKey);
-        setSortOrder(newSortOrder);
-        setPage(1);
-        const productIds = [...selectedProducts];
-        await searchProductsWithAvgRating({
-          productIds: productIds.length > 0 ? productIds : undefined,
-          ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
-          keyword: searchValue || undefined,
-          sortKey: newSortKey,
-          sortOrder: newSortOrder,
-          page: 1,
-          limit,
-        });
-      }
-    } catch (err) {
-      setErrorMess(err.message || "Error sorting data");
+  // Sửa lại hàm handleSort để không gọi API trực tiếp
+  // Sửa lại hàm handleSort để map đúng sortKey
+  const handleSort = (newSortKey, newSortOrder) => {
+    // Map sortKey từ UI sang sortKey mà API hiểu được
+    let apiSortKey = newSortKey;
+    if (newSortKey === "rating") {
+      apiSortKey = "avgRating";
+    } else if (newSortKey === "product") {
+      apiSortKey = "name";
+    } else if (newSortKey === "username") {
+      apiSortKey = "username"; // Đảm bảo username được xử lý đúng
     }
-  };
 
+    setSortKey(apiSortKey);
+    setSortOrder(newSortOrder);
+    setPage(1); // Reset về trang 1 khi sort
+  };
   // Handle review update
   const handleUpdateReview = async (e) => {
     e.preventDefault();
@@ -248,28 +267,6 @@ export default function ReviewManagement() {
       setEditRating("");
       setEditComment("");
       setSelectedItem(null);
-
-      // Refresh reviews list
-      const productIds = [...selectedProducts];
-      if (
-        searchValue ||
-        selectedProducts.size > 0 ||
-        ratingRange[0] > 0 ||
-        ratingRange[1] < 5 ||
-        sortKey
-      ) {
-        await searchProductsWithAvgRating({
-          productIds: productIds.length > 0 ? productIds : undefined,
-          ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
-          keyword: searchValue || undefined,
-          sortKey: sortKey || "createdAt",
-          sortOrder,
-          page,
-          limit,
-        });
-      } else {
-        await getAllReviews(page, limit, searchValue, sortKey, sortOrder);
-      }
     } catch (err) {
       toastCustom({
         title: "Error",
@@ -277,7 +274,6 @@ export default function ReviewManagement() {
       });
     }
   };
-
   // Handle review deletion
   const handleDeleteReview = async () => {
     if (!selectedItem) return;
@@ -291,28 +287,6 @@ export default function ReviewManagement() {
 
       setDeleteModalOpen(false);
       setSelectedItem(null);
-
-      // Refresh reviews list
-      const productIds = [...selectedProducts];
-      if (
-        searchValue ||
-        selectedProducts.size > 0 ||
-        ratingRange[0] > 0 ||
-        ratingRange[1] < 5 ||
-        sortKey
-      ) {
-        await searchProductsWithAvgRating({
-          productIds: productIds.length > 0 ? productIds : undefined,
-          ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
-          keyword: searchValue || undefined,
-          sortKey: sortKey || "createdAt",
-          sortOrder,
-          page,
-          limit,
-        });
-      } else {
-        await getAllReviews(page, limit, searchValue, sortKey, sortOrder);
-      }
     } catch (err) {
       toastCustom({
         title: "Error",
@@ -320,34 +294,70 @@ export default function ReviewManagement() {
       });
     }
   };
-
-  // Format data for table
+  // Sửa lại formattedReviews để xử lý dữ liệu đúng cách
+  // Sửa lại formattedReviews để xử lý dữ liệu đúng cách
   const formattedReviews = useMemo(() => {
-    const data =
+    let data = [];
+
+    if (
       searchValue ||
       selectedProducts.size > 0 ||
       ratingRange[0] > 0 ||
-      ratingRange[1] < 5
-        ? searchedProducts
-        : reviews;
+      ratingRange[1] < 5 ||
+      sortKey
+    ) {
+      // Kiểm tra xem searchedProducts có tồn tại và có phải là mảng không
+      if (Array.isArray(searchedProducts) && searchedProducts.length > 0) {
+        // Flatten searchedProducts -> array of reviews
+        data = searchedProducts.flatMap((product) => {
+          if (!product.reviews || !Array.isArray(product.reviews)) {
+            return [];
+          }
+          return product.reviews.map((review) => ({
+            ...review,
+            product: {
+              _id: product._id,
+              name: product.name,
+            },
+            avgRating: product.avgRating,
+          }));
+        });
+      }
+    } else {
+      data = reviews || [];
+    }
+
+    console.log("Data length before formatting:", data.length);
+
+    // Không cần phải cắt dữ liệu ở đây vì API đã xử lý phân trang
     return data.map((item, index) => ({
-      id: item._id || index,
+      id: item._id || `review-${index}`,
+      // Tính toán index dựa trên page và limit hiện tại
       index: (page - 1) * limit + index + 1,
-      product: item.product?.name || item.name || "Unknown product",
-      username: item.user?.username || item.name || "Unknown user",
+      product: item.product?.name || "Unknown product",
+      username: item.name || item.user?.username || "Unknown user",
       rating: item.avgRating ? item.avgRating.toFixed(1) : item.rating || 0,
       comment: item.comment || "No comment",
-      productId: item.product?._id || item._id,
+      productId: item.product?._id || item.product || item._id,
     }));
   }, [
     reviews,
     searchedProducts,
-    page,
-    limit,
     searchValue,
     selectedProducts,
     ratingRange,
+    sortKey,
+    page,
+    limit,
   ]);
+
+  // Thêm useEffect để log dữ liệu khi formattedReviews thay đổi
+  useEffect(() => {
+    console.log("Formatted reviews:", formattedReviews.length);
+    console.log("Current page:", page);
+    console.log("Current limit:", limit);
+    console.log("Total pages:", totalPages);
+  }, [formattedReviews, page, limit, totalPages]);
 
   return (
     <div className="p-6">
@@ -409,7 +419,7 @@ export default function ReviewManagement() {
               {/* <StarSlider
                 value={editRating ? [editRating.toString()] : []}
                   onChangeRange={(range) => setEditRating(range)}
-               
+
                 /> */}
               <ReactRatingStarsComponent
                 defaultValue={parseInt(editRating)}
@@ -555,7 +565,12 @@ export default function ReviewManagement() {
         items={formattedReviews}
         columns={columns}
         page={page}
-        setPage={setPage}
+        setPage={(newPage) => {
+          if (newPage !== page && !isRequesting) {
+            console.log("ReviewManagement: Changing page to:", newPage);
+            setPage(newPage);
+          }
+        }}
         limit={limit}
         totalPages={totalPages}
         visibleColumns={visibleColumns}
@@ -569,7 +584,7 @@ export default function ReviewManagement() {
           setSelectedItem(review);
           setDeleteModalOpen(true);
         }}
-        isLoading={isLoading || productLoading}
+        isLoading={isLoading || productLoading || isRequesting}
         isSorting
         onSort={handleSort}
       />

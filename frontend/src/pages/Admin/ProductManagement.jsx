@@ -37,7 +37,7 @@ const columns = [
   { name: "Giá", uid: "price", sortable: true },
   { name: "Danh mục", uid: "category", sortable: true },
   { name: "Tồn kho", uid: "countInStock", sortable: true },
-  { name: "Mô tả", uid: "description" },
+  { name: "Mô tả", uid: "description", sortable: true },
   { name: "Hành động", uid: "actions" },
 ];
 
@@ -165,7 +165,12 @@ export default function ProductManagement() {
         } else {
           await fetchAllProducts(page, limit, sortKey, sortOrder);
         }
-        console.log("Dữ liệu đã lấy:", { page, limit, totalProducts, totalPages });
+        console.log("Dữ liệu đã lấy:", {
+          page,
+          limit,
+          totalProducts,
+          totalPages,
+        });
       } catch (err) {
         console.error("Lỗi khi lấy sản phẩm:", err);
         setErrorMess(err.message || "Lỗi khi lấy sản phẩm");
@@ -336,7 +341,9 @@ export default function ProductManagement() {
       let finalImages = [...editImages];
 
       if (isNewImageAdded) {
-        const newImageFiles = editImages.filter((img) => typeof img !== "string");
+        const newImageFiles = editImages.filter(
+          (img) => typeof img !== "string"
+        );
         if (newImageFiles.length > 0) {
           const uploaded = await uploadProductImages(newImageFiles);
           finalImages = [
@@ -583,7 +590,9 @@ export default function ProductManagement() {
                     className="max-w-xs"
                     label="Danh mục"
                     fullWidth
-                    selectedKeys={selectedCategoryId ? [selectedCategoryId] : []}
+                    selectedKeys={
+                      selectedCategoryId ? [selectedCategoryId] : []
+                    }
                     onSelectionChange={(keys) =>
                       setEditCategory(Array.from(keys)[0])
                     }
@@ -736,9 +745,7 @@ export default function ProductManagement() {
         {/* Nút xóa bộ lọc */}
         {(selectedCategories.size > 0 ||
           priceRange[0] > 0 ||
-          priceRange[1] < 999999999
-          
-          ) && (
+          priceRange[1] < 999999999) && (
           <Button variant="flat" color="danger" onPress={clearFilters}>
             Xóa bộ lọc
           </Button>
