@@ -50,6 +50,13 @@ const INITIAL_VISIBLE_COLUMNS = new Set([
   "actions",
 ]);
 
+// Thêm hàm getImageUrl
+const getImageUrl = (image) => {
+  if (!image) return "/default-product.png";
+  if (image.startsWith("http")) return image;
+  return `http://localhost:3000${image}`;
+};
+
 export default function OrderManagement() {
   const {
     orders,
@@ -680,18 +687,10 @@ export default function OrderManagement() {
                           key={item._id}
                           className="flex items-center border-b pb-2"
                         >
-                          <div className="w-16 h-16 mr-4">
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
                           <div className="flex-1">
                             <div className="font-medium">{item.name}</div>
                             <div className="text-sm text-gray-600">
-                              {item.qty} x {formatPrice(item.price)} ={" "}
-                              {formatPrice(item.qty * item.price)}
+                              Số lượng: {item.quantity} | Giá: {formatPrice(item.price)} | Tổng: {formatPrice(item.quantity * item.price)}
                             </div>
                           </div>
                         </div>

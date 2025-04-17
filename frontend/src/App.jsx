@@ -19,6 +19,18 @@ import NotFound from "./pages/NotFound";
 import ProductManagement from "./pages/Admin/ProductManagement";
 import ReviewManagement from "./pages/Admin/reviewManagement";
 import OrderManagement from "./pages/Admin/OrderManagement";
+import UpdateProfile from "./components/User/UpdateProfile";
+import Cart from "./pages/Customer/Cart";
+import CheckoutForm from "./pages/Customer/CheckoutForm";
+import Contact from "./pages/Customer/Contact";
+import CustomerLayout from "./pages/Customer/CustomerLayout";
+import Home from "./pages/Customer/Home";
+import ProductList from "./pages/Customer/ProductList";
+import ProductDetail from "./pages/Customer/ProductDetail";
+import OrderList from "./pages/Customer/OrderList";
+import Payment from "./pages/Customer/Payment";
+// import OrderDetail from "./pages/Customer/OrderDetail";
+
 import { Rotate3D } from "lucide-react";
 // redirect authenticated users to the home page
 // const RedirectAuthenticatedUser = ({ children }) => {
@@ -86,8 +98,27 @@ function App() {
               <Route path="reviews" element={<ReviewManagement />} />
               <Route path="reviews" element={<ReviewManagement />} />
               <Route path="orders" element={<OrderManagement />} />
-             
+              <Route path="profile" element={<UpdateProfile />} />
             </Route>
+
+            {/* Customer Routes */}
+            <Route
+              path="/"
+              element={
+                <AuthGuard requireAuth requireVerified>
+                  <CustomerLayout />
+                </AuthGuard>
+              }
+            >
+              <Route index element={<Home />} />
+              <Route path="products" element={<ProductList />} />
+              <Route path="products/:id" element={<ProductDetail />} />
+              <Route path="cart" element={<Cart />} />
+              <Route path="orders" element={<OrderList />} />
+              <Route path="profile" element={<UpdateProfile />} />
+              <Route path="payment" element={<Payment />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

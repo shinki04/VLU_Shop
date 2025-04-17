@@ -24,12 +24,22 @@ import {
   DropdownItem,
   Slider,
   Chip,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,Card,CardHeader,
+  Avatar,
 } from "@heroui/react";
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import StarSlider from "../../components/StarSlider";
 import { set } from "lodash";
+import { Star, Search, SortAsc, SortDesc } from "lucide-react";
+import { formatDate } from "../../utils/formatters";
+
 const columns = [
   { name: "STT", uid: "index" },
   { name: "Sản phẩm", uid: "product", sortable: true },
@@ -48,7 +58,7 @@ const INITIAL_VISIBLE_COLUMNS = [
   "actions",
 ];
 
-export default function ReviewManagement() {
+const ReviewManagement = () => {
   const {
     allReviews: reviews,
     searchedProducts,
@@ -92,113 +102,68 @@ export default function ReviewManagement() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-  // Fetch products on component mount
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        await fetchAllProducts(1, 1000);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setErrorMess(err.message || "Error fetching products");
-      }
-    };
-    loadProducts();
-  }, [fetchAllProducts]);
+    fetchReviews();
+  }, [sortKey, sortOrder, ratingRange, searchValue, selectedProducts]);
 
-  // Sửa lại useEffect để tránh gọi API nhiều lần
-  // Modify the useEffect to ensure we're sending the correct page
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      // Nếu đang có request, không gửi request mới
-      if (isRequesting) return;
-
+  const fetchReviews = async () => {
+    try {
+      setErrorMess("");
       setIsRequesting(true);
-      try {
-        const productIds = [...selectedProducts];
-        console.log(
-          `ReviewManagement: Fetching data for page ${page}, limit ${limit}`
+      const productIds = [...selectedProducts];
+      console.log(
+        `ReviewManagement: Fetching data for page ${page}, limit ${limit}`
+      );
+
+      const timestamp = new Date().getTime();
+
+      if (
+        searchValue ||
+        selectedProducts.size > 0 ||
+        ratingRange[0] > 0 ||
+        ratingRange[1] < 5 ||
+        sortKey
+      ) {
+        await searchProductsWithAvgRating({
+          productIds: productIds.length > 0 ? productIds : undefined,
+          ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
+          keyword: searchValue || undefined,
+          page: page,
+          limit: limit,
+          sortKey: sortKey || "createdAt",
+          sortOrder,
+          _t: timestamp,
+        });
+      } else {
+        await getAllReviews(
+          page,
+          limit,
+          searchValue,
+          sortKey,
+          sortOrder,
+          timestamp
         );
-
-        // Thêm timestamp để tránh cache
-        const timestamp = new Date().getTime();
-
-        if (
-          searchValue ||
-          selectedProducts.size > 0 ||
-          ratingRange[0] > 0 ||
-          ratingRange[1] < 5 ||
-          sortKey
-        ) {
-          if (isMounted) {
-            await searchProductsWithAvgRating({
-              productIds: productIds.length > 0 ? productIds : undefined,
-              ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
-              keyword: searchValue || undefined,
-              page: page,
-              limit: limit,
-              sortKey: sortKey || "createdAt",
-              sortOrder,
-              _t: timestamp, // Thêm timestamp để tránh cache
-            });
-          }
-        } else {
-          if (isMounted) {
-            await getAllReviews(
-              page,
-              limit,
-              searchValue,
-              sortKey,
-              sortOrder,
-              timestamp
-            );
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error("Error fetching reviews:", err);
-          setErrorMess(err.message || "Error fetching reviews");
-        }
-      } finally {
-        if (isMounted) {
-          setIsRequesting(false);
-        }
       }
-    };
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+      setErrorMess(err.message || "Error fetching reviews");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    page,
-    limit,
-    selectedProducts,
-    ratingRange,
-    searchValue,
-    sortKey,
-    sortOrder,
-    searchProductsWithAvgRating,
-    getAllReviews,
-  ]);
-
-  // Show error modal if there's an error
   useEffect(() => {
     if (error || productError || errorMess) {
       onOpen();
     }
   }, [error, productError, errorMess, onOpen]);
 
-  // Handle search input change
   const handleInputChange = (value) => {
     setInputValue(value);
     setSearchValue(value);
-    setPage(1); // Chỉ reset page khi người dùng thực sự thay đổi giá trị tìm kiếm
+    setPage(1);
   };
 
-  // Clear filters
   const clearFilters = () => {
     setSelectedProducts(new Set());
     setRatingRange([0, 5]);
@@ -209,24 +174,61 @@ export default function ReviewManagement() {
     setPage(1);
   };
 
-  // Sửa lại hàm handleSort để không gọi API trực tiếp
-  // Sửa lại hàm handleSort để map đúng sortKey
-  const handleSort = (newSortKey, newSortOrder) => {
-    // Map sortKey từ UI sang sortKey mà API hiểu được
-    let apiSortKey = newSortKey;
-    if (newSortKey === "rating") {
-      apiSortKey = "avgRating";
-    } else if (newSortKey === "product") {
-      apiSortKey = "name";
-    } else if (newSortKey === "username") {
-      apiSortKey = "username"; // Đảm bảo username được xử lý đúng
-    }
+  const handleSort = async (newSortKey, newSortOrder) => {
+    try {
+      setErrorMess("");
+      setIsRequesting(true);
+      
+      let apiSortKey = newSortKey;
+      if (newSortKey === "rating") {
+        apiSortKey = "avgRating";
+      } else if (newSortKey === "product") {
+        apiSortKey = "name";
+      } else if (newSortKey === "username") {
+        apiSortKey = "username";
+      }
 
-    setSortKey(apiSortKey);
-    setSortOrder(newSortOrder);
-    setPage(1); // Reset về trang 1 khi sort
+      const productIds = [...selectedProducts];
+      const timestamp = new Date().getTime();
+
+      if (
+        searchValue ||
+        selectedProducts.size > 0 ||
+        ratingRange[0] > 0 ||
+        ratingRange[1] < 5
+      ) {
+        await searchProductsWithAvgRating({
+          productIds: productIds.length > 0 ? productIds : undefined,
+          ratingRange: `${ratingRange[0]},${ratingRange[1]}`,
+          keyword: searchValue || undefined,
+          page: 1, // Reset to first page
+          limit: limit,
+          sortKey: apiSortKey,
+          sortOrder: newSortOrder,
+          _t: timestamp,
+        });
+      } else {
+        await getAllReviews(
+          1, // Reset to first page
+          limit,
+          searchValue,
+          apiSortKey,
+          newSortOrder,
+          timestamp
+        );
+      }
+
+      setSortKey(apiSortKey);
+      setSortOrder(newSortOrder);
+      setPage(1);
+    } catch (err) {
+      console.error("Error sorting reviews:", err);
+      setErrorMess(err.message || "Error sorting reviews");
+    } finally {
+      setIsRequesting(false);
+    }
   };
-  // Handle review update
+
   const handleUpdateReview = async (e) => {
     e.preventDefault();
     if (!selectedItem) {
@@ -274,7 +276,7 @@ export default function ReviewManagement() {
       });
     }
   };
-  // Handle review deletion
+
   const handleDeleteReview = async () => {
     if (!selectedItem) return;
     try {
@@ -294,8 +296,7 @@ export default function ReviewManagement() {
       });
     }
   };
-  // Sửa lại formattedReviews để xử lý dữ liệu đúng cách
-  // Sửa lại formattedReviews để xử lý dữ liệu đúng cách
+
   const formattedReviews = useMemo(() => {
     let data = [];
 
@@ -306,9 +307,7 @@ export default function ReviewManagement() {
       ratingRange[1] < 5 ||
       sortKey
     ) {
-      // Kiểm tra xem searchedProducts có tồn tại và có phải là mảng không
       if (Array.isArray(searchedProducts) && searchedProducts.length > 0) {
-        // Flatten searchedProducts -> array of reviews
         data = searchedProducts.flatMap((product) => {
           if (!product.reviews || !Array.isArray(product.reviews)) {
             return [];
@@ -329,10 +328,8 @@ export default function ReviewManagement() {
 
     console.log("Data length before formatting:", data.length);
 
-    // Không cần phải cắt dữ liệu ở đây vì API đã xử lý phân trang
     return data.map((item, index) => ({
       id: item._id || `review-${index}`,
-      // Tính toán index dựa trên page và limit hiện tại
       index: (page - 1) * limit + index + 1,
       product: item.product?.name || "Unknown product",
       username: item.name || item.user?.username || "Unknown user",
@@ -351,7 +348,6 @@ export default function ReviewManagement() {
     limit,
   ]);
 
-  // Thêm useEffect để log dữ liệu khi formattedReviews thay đổi
   useEffect(() => {
     console.log("Formatted reviews:", formattedReviews.length);
     console.log("Current page:", page);
@@ -360,234 +356,166 @@ export default function ReviewManagement() {
   }, [formattedReviews, page, limit, totalPages]);
 
   return (
-    <div className="p-6">
-      <CustomModal
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        title="Error!"
-        message={error || productError || errorMess}
-        onClose={() => {
-          setErrorMess("");
-          clearError();
-        }}
-      />
-
-      {/* Edit Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => {
-          setEditModalOpen(false);
-          setEditRating("");
-          setEditComment("");
-          setSelectedItem(null);
-        }}
-      >
-        <ModalContent>
-          <ModalHeader>Edit Review</ModalHeader>
-          <ModalBody>
-            <Form
-              className="space-y-4"
-              method="put"
-              onSubmit={handleUpdateReview}
+    <div className="p-4">
+      <Card className="mb-4">
+        <CardHeader className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Quản lý đánh giá</h1>
+          </div>
+          <div className="flex gap-4">
+            <Input
+              placeholder="Tìm kiếm theo tên người dùng hoặc sản phẩm..."
+              value={inputValue}
+              onChange={handleInputChange}
+              startContent={<Search className="w-4 h-4" />}
+              className="max-w-xs"
+            />
+            <Select
+              label="Lọc theo đánh giá"
+              value={ratingRange[0].toString()}
+              onChange={(e) => setRatingRange([parseInt(e.target.value), ratingRange[1]])}
+              className="w-40"
             >
-              {/* <Select
-                isRequired
-                label="Rating"
-                fullWidth
-                textValue={editRating}
-                selectedKeys={editRating ? [editRating.toString()] : []}
-                onSelectionChange={(keys) => setEditRating(Array.from(keys)[0])}
-              >
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <SelectItem key={rating}>{rating} stars</SelectItem>
-                ))}
-              </Select> */}
-
-              {/* <Slider
-                className="max-w-md"
-                color="foreground"
-                defaultValue={editRating ? [editRating.toString()] : []}
-                getValue={(value) => setEditRating(value[0])}
-                // value={[editRating]}
-                label="Rating"
-                maxValue={5}
-                minValue={1}
-                showSteps={true}
-                size="sm"
-                step={1}
-              /> */}
-              {/* <StarSlider
-                value={editRating ? [editRating.toString()] : []}
-                  onChangeRange={(range) => setEditRating(range)}
-
-                /> */}
-              <ReactRatingStarsComponent
-                defaultValue={parseInt(editRating)}
-                onChangeRange={(value) => setEditRating(value)}
-                className="w-full"
-                size={24}
-              />
-
-              <Textarea
-                isRequired
-                label="Comment"
-                value={editComment}
-                onChange={(e) => setEditComment(e.target.value)}
-                placeholder="Enter comment (minimum 10 characters)"
-              />
-              <div className="flex flex-row gap-2">
-                <Button
-                  variant="flat"
-                  onPress={() => {
-                    setEditModalOpen(false);
-                    setEditRating("");
-                    setEditComment("");
-                    setSelectedItem(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button color="primary" type="submit">
-                  Save
-                </Button>
-              </div>
-            </Form>
-          </ModalBody>
-          <ModalFooter />
-        </ModalContent>
-      </Modal>
-
-      {/* Delete Modal */}
-      <DeleteModal
-        isOpen={deleteModalOpen}
-        onOpenChange={setDeleteModalOpen}
-        onDelete={handleDeleteReview}
-        itemName={selectedItem?.comment?.substring(0, 20) + "..."}
-      />
-
-      <h1 className="text-2xl font-semibold mb-4">Review Management</h1>
-
-      <TopContent
-        filterValue={inputValue}
-        setFilterValue={handleInputChange}
-        visibleColumns={visibleColumns}
-        setVisibleColumns={setVisibleColumns}
-        limit={limit}
-        setLimit={setLimit}
-        setPage={setPage}
-        columns={columns}
-        onAddNew={() => setErrorMess("Không được tự thêm mới review")}
-      />
-
-      {/* Filters */}
-      <div className="flex flex-col gap-4">
-        {/* Product Filter */}
-        <div className="flex gap-2 items-center">
-          <Dropdown>
-            <DropdownTrigger>
-              <Button disableRipple variant="bordered" color="primary">
-                {selectedProducts.size > 0
-                  ? `${selectedProducts.size} products selected`
-                  : "Select products"}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label="Product filter"
-              selectionMode="multiple"
-              selectedKeys={selectedProducts}
-              onSelectionChange={(keys) => {
-                setSelectedProducts(keys);
-                setPage(1);
-              }}
+              <SelectItem key="1" value="1">1 sao</SelectItem>
+              <SelectItem key="2" value="2">2 sao</SelectItem>
+              <SelectItem key="3" value="3">3 sao</SelectItem>
+              <SelectItem key="4" value="4">4 sao</SelectItem>
+              <SelectItem key="5" value="5">5 sao</SelectItem>
+            </Select>
+            <Select
+              label="Sắp xếp theo"
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value)}
+              className="w-40"
             >
-              {products.map((product) => (
-                <DropdownItem key={product._id}>{product.name}</DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
-          {selectedProducts.size > 0 && (
-            <div className="flex gap-1">
-              {[...selectedProducts].map((prodId) => {
-                const product = products.find((p) => p._id === prodId);
-                return (
-                  product && (
-                    <Chip
-                      key={prodId}
-                      color="primary"
-                      onClose={() => {
-                        const newSet = new Set(selectedProducts);
-                        newSet.delete(prodId);
-                        setSelectedProducts(newSet);
-                        setPage(1);
-                      }}
-                    >
-                      {product.name}
-                    </Chip>
-                  )
-                );
-              })}
-            </div>
-          )}
-        </div>
+              <SelectItem key="createdAt" value="createdAt">Ngày đánh giá</SelectItem>
+              <SelectItem key="rating" value="rating">Số sao</SelectItem>
+            </Select>
+            <Button
+              isIconOnly
+              variant="flat"
+              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+            >
+              {sortOrder === "desc" ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
-        {/* Rating Range Slider */}
-        <div className="flex flex-col gap-2 max-w-md">
-          <Slider
-            formatOptions={{ style: "decimal", minimumFractionDigits: 1 }}
-            showTooltip={true}
-            defaultValue={[0, 5]}
-            showSteps={true}
-            step={1}
+      {/* Select lọc trạng thái đơn hàng */}
+      <div className="mb-4 flex flex-wrap gap-4 items-end">
+        <div className="w-full md:w-96 space-y-2">
+          <label className="text-sm font-medium">Lọc theo số sao ({ratingRange[0]} - {ratingRange[1]} sao)</label>
+          <Slider 
+            size="sm"
+            step={0.5}
             minValue={0}
             maxValue={5}
             value={ratingRange}
-            onChange={(value) => {
-              setRatingRange(value);
-              setPage(1);
-            }}
-            label="Rating Range"
-            isRange
+            onChange={setRatingRange}
+            className="w-full"
+            marks={[
+              { value: 0, label: "0" },
+              { value: 1, label: "1" },
+              { value: 2, label: "2" },
+              { value: 3, label: "3" },
+              { value: 4, label: "4" },
+              { value: 5, label: "5" },
+            ]}
+            showTooltip={true}
+            tooltipContent={value => `${value} sao`}
           />
         </div>
-
-        {/* Clear Filters Button */}
-        {(selectedProducts.size > 0 ||
-          ratingRange[0] > 0 ||
-          ratingRange[1] < 5 ||
-          searchValue) && (
-          <Button variant="flat" color="danger" onPress={clearFilters}>
-            Clear Filters
-          </Button>
-        )}
       </div>
 
-      <TableComponent
-        items={formattedReviews}
-        columns={columns}
-        page={page}
-        setPage={(newPage) => {
-          if (newPage !== page && !isRequesting) {
-            console.log("ReviewManagement: Changing page to:", newPage);
-            setPage(newPage);
-          }
-        }}
-        limit={limit}
-        totalPages={totalPages}
-        visibleColumns={visibleColumns}
-        onEdit={(review) => {
-          setSelectedItem(review);
-          setEditRating(review.rating.toString());
-          setEditComment(review.comment);
-          setEditModalOpen(true);
-        }}
-        onDelete={(review) => {
-          setSelectedItem(review);
-          setDeleteModalOpen(true);
-        }}
-        isLoading={isLoading || productLoading || isRequesting}
-        isSorting
-        onSort={handleSort}
-      />
+      {isLoading || productLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Spinner size="lg" />
+        </div>
+      ) : (
+        <Table aria-label="Reviews table">
+          <TableHeader>
+            <TableColumn>Người dùng</TableColumn>
+            <TableColumn>Sản phẩm</TableColumn>
+            <TableColumn>Đánh giá</TableColumn>
+            <TableColumn>Bình luận</TableColumn>
+            <TableColumn>Ngày đánh giá</TableColumn>
+            <TableColumn>Hành động</TableColumn>
+          </TableHeader>
+          <TableBody>
+            {formattedReviews.map((review) => (
+              <TableRow key={review.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Avatar
+                      src={review.username.startsWith('http') ? review.username : products.find(p => p._id === review.productId)?.image || ''}
+                      alt={review.username}
+                      size="sm"
+                    />
+                    <span>{review.username}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{review.product}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < parseFloat(review.rating) ? "text-yellow-400" : "text-gray-300"
+                        }`}
+                        fill={i < parseFloat(review.rating) ? "currentColor" : "none"}
+                      />
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>{review.comment}</TableCell>
+                <TableCell>{formatDate(review.index)}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      color="danger"
+                      size="sm"
+                      variant="flat"
+                      onPress={() => {
+                        setSelectedItem(review);
+                        onOpen();
+                      }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent>
+          <ModalHeader>Xác nhận xóa đánh giá</ModalHeader>
+          <ModalBody>
+            <p>Bạn có chắc chắn muốn xóa đánh giá này?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" variant="light" onPress={onOpenChange}>
+              Hủy
+            </Button>
+            <Button
+              color="danger"
+              onPress={() => {
+                handleDeleteReview();
+                onOpenChange();
+              }}
+            >
+              Xóa
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
-}
+};
+
+export default ReviewManagement;

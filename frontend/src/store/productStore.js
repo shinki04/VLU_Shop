@@ -92,6 +92,7 @@ const useProductStore = create((set) => ({
     try {
       const response = await axios.get(`${PRODUCT_API}/${productId}`);
       set({ product: response.data.product, isLoading: false });
+      return response.data.product;
     } catch (error) {
       set({
         isLoading: false,

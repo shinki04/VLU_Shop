@@ -102,7 +102,7 @@ export const getCart = asyncHandler(async (req, res) => {
     const total = await Cart.countDocuments();
 
     const cart = await Cart.findOne({ user: req.user._id })
-      .populate("items.product", "name image price countInStock")
+      .populate("items.product", "name image price countInStock images")
       .lean();
 
     if (!cart || cart.items.length === 0) {

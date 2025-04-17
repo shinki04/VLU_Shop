@@ -33,14 +33,14 @@ const useReviewStore = create((set, get) => ({
         reviewData
       );
       set({
-        reviews: response.data.review,
-        userReviews: response.data.review,
-        allReviews: response.data.reviews,
-        totalReviews: response.data.numReviews,
-
+        reviews: [...get().reviews, response.data.review],
+        userReviews: [...get().userReviews, response.data.review],
+        allReviews: [...get().allReviews, response.data.review],
+        totalReviews: get().totalReviews + 1,
         message: "Thêm đánh giá thành công",
         isLoading: false,
       });
+      return response.data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Lỗi khi thêm đánh giá",

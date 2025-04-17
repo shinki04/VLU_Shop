@@ -336,22 +336,22 @@ export const updateCurrentUser = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      const { username, email, password } = req.body;
+      const { username, email } = req.body;
 
       // Kiểm tra nếu người dùng không nhập mật khẩu hiện tại
-      if (!password) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Current password is required" });
-      }
+      // if (!password) {
+      //   return res
+      //     .status(400)
+      //     .json({ success: false, message: "Current password is required" });
+      // }
 
       // Kiểm tra mật khẩu hiện tại
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Incorrect password" });
-      }
+      // const isMatch = await user.comparePassword(password);
+      // if (!isMatch) {
+      //   return res
+      //     .status(401)
+      //     .json({ success: false, message: "Incorrect password" });
+      // }
 
       user.username = req.body.username || user.username;
       user.email = req.body.email || user.email;

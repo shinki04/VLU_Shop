@@ -1,8 +1,6 @@
-// Description: This file contains the AdminLayout component which serves as the main layout for the admin dashboard.
-/// FIX GET AVATAR
 
 import React, { useState } from "react";
-import { href, Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import {
   Navbar,
   NavbarBrand,
@@ -20,7 +18,7 @@ import {
 import { X } from "lucide-react";
 import useUserStore from "../../store/userStore";
 
-const AcmeLogo = () => {
+const ShopLogo = () => {
   return (
     <svg fill="none" height="36" viewBox="0 0 32 32" width="36">
       <path
@@ -33,9 +31,9 @@ const AcmeLogo = () => {
   );
 };
 
-export default function AdminLayout() {
+export default function CustomerLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, logout, defaultImage } = useUserStore(); // Added defaultImage
+  const { user, logout, defaultImage } = useUserStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -65,26 +63,24 @@ export default function AdminLayout() {
   };
 
   const menuItems = [
-    { name: "Dashboard", href: "/admin/dashboard" },
-    { name: "Category", href: "/admin/category" },
-    { name: "Users", href: "/admin/users" },
-    { name: "Product", href: "/admin/products" },
-    { name: "Reviews", href: "/admin/reviews" },
-    { name: "Order", href: "/admin/orders" },
+    { name: "Trang chủ", href: "/" },
+    { name: "Sản phẩm", href: "/products" },
+    { name: "Giỏ hàng", href: "/cart" },
+    { name: "Đơn hàng", href: "/orders" },
+    { name: "Contact", href: "/contact" },
+    
   ];
 
-  // Construct the avatar image URL
   const avatarSrc = user?.image
     ? `http://localhost:3000${user.image}`
     : `http://localhost:3000${defaultImage}`;
 
   return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <Navbar position="sticky" className="bg-white shadow-lg w-full">
+    <div className="min-h-screen bg-gray-100">
+      <Navbar className="bg-white shadow-lg">
         <NavbarBrand>
-          <AcmeLogo />
-          <p className="font-bold text-indigo-600 text-2xl">Hello Admin</p>
+          <ShopLogo />
+          <p className="font-bold text-indigo-600 text-2xl">VLU Shop</p>
         </NavbarBrand>
 
         <NavbarContent className="hidden sm:flex gap-4" justify="center">
@@ -98,33 +94,42 @@ export default function AdminLayout() {
         </NavbarContent>
 
         <NavbarContent as="div" justify="end">
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
-              <Avatar
-                isBordered
-                as="button"
-                className="transition-transform"
-                color="secondary"
-                name={user?.username ?? "Admin User"} // Simplified with nullish coalescing
-                size="sm"
-                src={avatarSrc} // Use constructed avatar URL
-              />
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Profile Actions" variant="flat">
-              <DropdownItem key="profile" className="h-14 gap-2">
-                <p className="font-semibold">Signed in as</p>
-                <p className="font-semibold">
-                  {user?.email ?? "admin@example.com"}
-                </p>
-              </DropdownItem>
-              <DropdownItem key="settings" href="/admin/profile">
-                Profile
-              </DropdownItem>
-              <DropdownItem key="logout" color="danger" onPress={handleLogout}>
-                Log Out
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+          {user ? (
+            <Dropdown placement="bottom-end">
+              <DropdownTrigger>
+                <Avatar
+                  isBordered
+                  as="button"
+                  className="transition-transform"
+                  color="secondary"
+                  name={user.username}
+                  size="sm"
+                  src={avatarSrc}
+                />
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile Actions" variant="flat">
+                <DropdownItem key="profile" className="h-14 gap-2">
+                  <p className="font-semibold">Signed in as</p>
+                  <p className="font-semibold">{user.email}</p>
+                </DropdownItem>
+                <DropdownItem key="settings" href="/profile">
+                  Profile
+                </DropdownItem>
+                <DropdownItem key="orders" href="/orders">
+                  My Orders
+                </DropdownItem>
+                <DropdownItem key="logout" color="danger" onPress={handleLogout}>
+                  Log Out
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          ) : (
+            <NavbarItem>
+              <Button as={Link} color="primary" href="/login" variant="flat">
+                Login
+              </Button>
+            </NavbarItem>
+          )}
         </NavbarContent>
 
         <NavbarContent className="sm:hidden" justify="end">
@@ -147,32 +152,42 @@ export default function AdminLayout() {
                   </Link>
                 </NavbarItem>
               ))}
-              <NavbarItem>
-                <Link
-                  color="foreground"
-                  href="/admin/profile"
-                  className="w-full"
-                >
-                  Profile
-                </Link>
-              </NavbarItem>
-              <NavbarItem>
-                <Link
-                  color="danger"
-                  href="/logout"
-                  className="w-full"
-                  onPress={handleLogout}
-                >
-                  Logout
-                </Link>
-              </NavbarItem>
+              {user ? (
+                <>
+                  <NavbarItem>
+                    <Link color="foreground" href="/profile" className="w-full">
+                      Profile
+                    </Link>
+                  </NavbarItem>
+                  <NavbarItem>
+                    <Link color="foreground" href="/orders" className="w-full">
+                      My Orders
+                    </Link>
+                  </NavbarItem>
+                  <NavbarItem>
+                    <Link
+                      color="danger"
+                      href="/logout"
+                      className="w-full"
+                      onPress={handleLogout}
+                    >
+                      Logout
+                    </Link>
+                  </NavbarItem>
+                </>
+              ) : (
+                <NavbarItem>
+                  <Link color="primary" href="/login" className="w-full">
+                    Login
+                  </Link>
+                </NavbarItem>
+              )}
             </NavbarContent>
           </div>
         )}
       </Navbar>
 
       <div className="flex">
-        {/* Main content */}
         <main className="flex-1 p-6">
           <div className="max-w-7xl mx-auto">
             <Outlet />

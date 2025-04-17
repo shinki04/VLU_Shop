@@ -17,7 +17,7 @@ export const PageSizeSelector = ({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 my-4">
       <span>Hiển thị:</span>
       <Select
         label="Số dòng mỗi trang"
@@ -27,6 +27,7 @@ export const PageSizeSelector = ({
           handleLimitChange(selected);
         }}
         className="max-w-xs"
+        size="sm"
       >
         {pageSizeOptions.map((val) => (
           <SelectItem

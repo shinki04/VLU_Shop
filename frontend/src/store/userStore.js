@@ -170,7 +170,7 @@ const useUserStore = create(
         set({ isLoading: true, error: null });
         try {
           const res = await axios.put(`${USERS_URL}/profile`, data);
-          set({ currentUser: res.data, isLoading: false });
+          set({ currentUser: res.data, user: res.data.user, isLoading: false });
         } catch (err) {
           set({
             error: err.response?.data?.message || "Update profile failed",
@@ -197,6 +197,19 @@ const useUserStore = create(
         } catch (err) {
           set({
             error: err.response?.data?.message || "Fetch users failed",
+            isLoading: false,
+          });
+          throw err;
+        }
+      },
+      getCurrentUser: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const res = await axios.get(`${USERS_URL}/profile`);
+          set({ currentUser: res.data, user: res.data.user, isLoading: false });
+        } catch (err) {
+          set({
+            error: err.response?.data?.message || "Update profile failed",
             isLoading: false,
           });
           throw err;

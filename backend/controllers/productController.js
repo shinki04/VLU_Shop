@@ -173,7 +173,15 @@ export const removeProduct = asyncHandler(async (req, res) => {
 export const fetchProductById = asyncHandler(async (req, res) => {
   try {
     const { productId } = req.params;
-    const product = await Product.findById(productId).populate("category");
+    const product = await Product.findById(productId)
+      .populate("category")
+      .populate({
+        path: "reviews",
+        populate: {
+          path: "user",
+          select: "username image"
+        }
+      });
     if (!product) {
       return res.status(404).json({
         success: false,
