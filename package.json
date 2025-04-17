@@ -7,7 +7,10 @@
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "backend": "nodemon ./backend/server.js",
     "frontend": "cd frontend && npm run dev",
-    "build": "npm install && npm install -- prefix frontend && npm run build -- prefix frontend"
+    "build": "npm install && npm install -- prefix frontend && npm run build -- prefix frontend",
+    "start" :"node backend/server.js",
+    "install:all": "concurrently \"npm install\" \"cd frontend && npm install\""
+
   },
   "keywords": [],
   "author": "",
