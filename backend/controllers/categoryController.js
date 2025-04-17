@@ -114,9 +114,11 @@ const listCategory = async (req, res) => {
 
     // Lấy tổng số danh mục
     const total = await Category.countDocuments();
+    // Tạo object sortOptions
 
     // Lấy danh mục theo trang
     const categories = await Category.find().skip(skip).limit(limit);
+
     // .sort({ name: 1 }); // Sắp xếp theo tên tăng dần (tuỳ chọn)
 
     // const all = await Category.find({});
@@ -175,6 +177,9 @@ const searchCategoryByKeyword = async (req, res) => {
     const keyword = req.query.q || "";
     const page = parseInt(req.query.page) || 1; // Mặc định là trang 1
     const limit = parseInt(req.query.limit) || 10; // Mặc định 10 mục mỗi trang
+    const sortBy = req.query.sortBy;
+    const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+    const sortOptions = sortBy ? { [sortBy]: sortOrder } : { createdAt: -1 };
 
     // Tính số mục cần bỏ qua (skip) dựa trên trang
     const skip = (page - 1) * limit;
@@ -188,7 +193,10 @@ const searchCategoryByKeyword = async (req, res) => {
     const total = await Category.countDocuments(query);
 
     // Lấy danh mục cho trang hiện tại
-    const categories = await Category.find(query).skip(skip).limit(limit);
+    const categories = await Category.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort(sortOptions);
 
     // Kiểm tra nếu không có kết quả
     if (categories.length === 0 && keyword) {

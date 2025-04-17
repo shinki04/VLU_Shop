@@ -26,8 +26,7 @@ const storage = multer.diskStorage({
 
     if (uploadType === "multiple") {
       // Sản phẩm
-     
-     
+
       dest = `./public/uploads/products/`;
     } else {
       // Người dùng
@@ -65,7 +64,6 @@ const upload = multer({
 
 // Tuyến đường upload
 router.post("/", authMiddleware, isAdmin, (req, res) => {
-
   const uploadType = req.query.type || "single";
   const uploadHandler =
     uploadType === "multiple"
@@ -99,7 +97,9 @@ router.post("/", authMiddleware, isAdmin, (req, res) => {
       res.status(200).json({
         success: true,
         message: `Đã upload ${imageUrls.length} ảnh thành công`,
-        images: imageUrls,
+        images: imageUrls.map((url) => {
+          return { url, name: path.basename(url) };
+        }),
       });
     } catch (error) {
       res.status(500).json({

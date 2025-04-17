@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal";
 import {
   Modal,
   ModalContent,

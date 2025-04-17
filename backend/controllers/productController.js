@@ -203,11 +203,11 @@ export const fetchAllProducts = asyncHandler(async (req, res) => {
 
     // Tính toán số lượng sản phẩm cần bỏ qua (skip)
     const skip = (page - 1) * limit;
-
     // Truy vấn sản phẩm với phân trang
     const products = await Product.find({})
       .populate("category")
-      .populate("reviews") 
+      .populate("reviews")
+
       .skip(skip) // Bỏ qua các sản phẩm đã truy vấn trước đó
       .limit(limit); // Giới hạn số lượng sản phẩm trả về
     //.sort({ createdAt: -1 }); // Sắp xếp theo ngày tạo sản phẩm giảm dần
@@ -234,9 +234,23 @@ export const fetchAllProducts = asyncHandler(async (req, res) => {
     });
   }
 });
+
 export const filterProducts = asyncHandler(async (req, res) => {
   // Lấy các tham số từ req.query (hoặc req.body nếu bạn dùng POST)
-  const { checked, priceRange, search, page = 1, limit = 12 } = req.query;
+  const {
+    checked,
+    priceRange,
+    search,
+    page = 1,
+    limit = 10,
+    sortBy = null,
+    sortOrder = "desc",
+  } = req.query;
+  // const sortBy = req.query.sortBy;
+  // const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+  // Tạo object sortOptions
+
+  // Truy vấn sản phẩm với phân trang
 
   let args = {};
 
@@ -290,13 +304,16 @@ export const filterProducts = asyncHandler(async (req, res) => {
   const limitNum = Math.max(1, parseInt(limit));
   const skip = (pageNum - 1) * limitNum;
 
+  const sortOptions = sortBy ? { [sortBy]: sortOrder } : { createdAt: -1 };
+
   try {
     // Truy vấn sản phẩm
     const products = await Product.find(args)
       .populate("category")
-      .populate("reviews") 
+      .populate("reviews")
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .sort(sortOptions);
 
     // Tính tổng số sản phẩm
     const totalProducts = await Product.countDocuments(args);
@@ -326,8 +343,8 @@ export const fetchNewProducts = asyncHandler(async (req, res) => {
   try {
     const products = await Product.find()
       .sort({ updatedAt: -1 })
-      .limit(5)
-      .populate("reviews") 
+      .limit(10)
+      .populate("reviews")
       .populate("category");
     res.status(200).json({
       success: true,

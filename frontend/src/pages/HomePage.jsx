@@ -30,13 +30,14 @@ import {
   ToastProvider,
   User,
   Avatar,
+  Alert,
 } from "@heroui/react";
-import CustomModal from "../components/CustomModal";
+import CustomModal from "../components/Modal/CustomModal";
 
 export default function HomePage() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
-  const { user, logout, error, isAuthenticated  } = useUserStore();
+  const { user, logout, error, isAuthenticated } = useUserStore();
   const nagative = useNavigate();
   const handleLogout = async () => {
     await logout();
@@ -70,7 +71,6 @@ export default function HomePage() {
   useEffect(() => {
     if (error) {
       onOpen();
-      
     }
   }, [error, onOpen]);
   return (
@@ -81,19 +81,20 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
             Welcome to Your Dashboard
           </h1>
+          <Alert color="danger">An alert with a custom icon</Alert>
 
-      <Button onPress={handleLogout}>Logout</Button>
-      {!isAuthenticated ? (
-        <Button onPress={nagativeLogin}>Login</Button>
-      ) : (
-        <User
-          avatarProps={{
-            src: `http://localhost:3000${user.image}`,
-          }}
-          description={user.role}
-          name={user.username}
-        />
-      )}
+          <Button onPress={handleLogout}>Logout</Button>
+          {!isAuthenticated ? (
+            <Button onPress={nagativeLogin}>Login</Button>
+          ) : (
+            <User
+              avatarProps={{
+                src: `http://localhost:3000${user.image}`,
+              }}
+              description={user.role}
+              name={user.username}
+            />
+          )}
 
           {/* Action Buttons */}
           {isAuthenticated && (
@@ -133,17 +134,11 @@ export default function HomePage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {isAuthenticated ? (
-                <Link
-                  to="/profile"
-                  className="text-blue-500 hover:underline"
-                >
+                <Link to="/profile" className="text-blue-500 hover:underline">
                   View Profile
                 </Link>
               ) : (
-                <Link
-                  to="/register"
-                  className="text-blue-500 hover:underline"
-                >
+                <Link to="/register" className="text-blue-500 hover:underline">
                   Don’t have an account? Register here
                 </Link>
               )}
@@ -151,7 +146,6 @@ export default function HomePage() {
           </div>
         </CardBody>
       </Card>
-
       {/* Error Modal */}
       <CustomModal
         isOpen={isOpen}

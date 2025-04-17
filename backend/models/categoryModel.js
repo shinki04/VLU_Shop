@@ -6,7 +6,10 @@ const categorySchema = new mongoose.Schema({
     trim: true,
     required: true,
     unique: true,
+    index: true,
   },
 });
+
+// categorySchema.index({ _id: -1 });
 const Category = mongoose.model("Category", categorySchema);
 export default Category;

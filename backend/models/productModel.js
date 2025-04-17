@@ -16,10 +16,10 @@ const productSchema = mongoose.Schema(
         ref: "Review", // Tham chiếu đến Review model
       },
     ],
-    rating: { type: Number, required: true, default: 0 },
-    numReviews: { type: Number, required: true, default: 0 },
+    rating: { type: Number, required: true, default: 0, index: true },
+    numReviews: { type: Number, required: true, default: 0, index: true },
     price: { type: Number, required: true, default: 0 },
-    countInStock: { type: Number, required: true, default: 0 },
+    countInStock: { type: Number, required: true, default: 0, index: true },
   },
   { timestamps: true }
 );

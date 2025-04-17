@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal";
+import DeleteModal from "../../components/Modal/DeleteModal";
 import {
   Spinner,
   Card,
@@ -40,6 +41,7 @@ import { TextSearch, Plus, ChevronDown } from "lucide-react";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import { debounce } from "lodash";
+
 const columns = [
   { name: "STT", uid: "index" },
   { name: "Tên danh mục", uid: "name" },
@@ -59,7 +61,7 @@ export default function CategoryManagement() {
     updateCategory,
     deleteCategory,
     searchCategoryByKeyword,
-    clearError, // Thêm hàm tìm kiếm
+    clearError,
   } = useCategoryStore();
 
   const [page, setPage] = useState(1);
@@ -67,12 +69,12 @@ export default function CategoryManagement() {
   const [visibleColumns, setVisibleColumns] = useState(
     new Set(INITIAL_VISIBLE_COLUMNS)
   );
-  const [inputValue, setInputValue] = useState(""); // Giá trị hiển thị trong input
-  const [filterValue, setFilterValue] = useState(""); // Giá trị dùng để tìm kiếm
-  // Tính tổng số trang dựa trên total từ store
+  const [inputValue, setInputValue] = useState("");
+  const [filterValue, setFilterValue] = useState("");
+  const [sortKey, setSortKey] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
 
-  // Trạng thái cho modal
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -80,37 +82,53 @@ export default function CategoryManagement() {
   const [addName, setAddName] = useState("");
   const [editName, setEditName] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [errorMess, setErrorMess] = useState("");
 
-  // Fetch dữ liệu khi page, limit, hoặc filterValue thay đổi
+  // Modified handleSort to use updated page and limit
+  const handleSort = async (newSortKey, newSortOrder) => {
+    try {
+      // Only update state if sortKey or sortOrder has changed
+      if (newSortKey !== sortKey || newSortOrder !== sortOrder) {
+        setSortKey(newSortKey);
+        setSortOrder(newSortOrder);
+        setPage(1); // Reset to page 1
+        setLimit(10); // Reset to default limit
+        // Use updated page (1) and limit (10) directly
+        await searchCategoryByKeyword(
+          filterValue,
+          page, // Use updated page
+          limit, // Use updated limit
+          newSortOrder,
+          newSortKey
+        );
+      }
+    } catch (err) {
+      setErrorMess(err.message || "Error sorting data");
+    }
+  };
+
+  // Fetch data when page, limit, filterValue, sortKey, or sortOrder changes
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (filterValue) {
-          // Gọi API tìm kiếm nếu có filterValue
-          await searchCategoryByKeyword(filterValue, page, limit);
+          await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
         } else {
-          // Gọi API fetch thông thường nếu không có filterValue
           await fetchCategories(page, limit);
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
-        <CustomModal
-          isOpen={isOpen}
-          onOpenChange={onOpenChange}
-          title="Error"
-          message={err}
-        />;
+        setErrorMess(err.message || "Error fetching data");
       }
     };
     fetchData();
-  }, [page, limit, filterValue, fetchCategories, searchCategoryByKeyword]);
+  }, [page, limit, filterValue, sortKey, sortOrder, fetchCategories, searchCategoryByKeyword]);
 
-  // Tạo hàm debounce để giới hạn tần suất cập nhật filterValue
+  // Debounced filter value update
   const debouncedSetFilterValue = useMemo(
     () =>
       debounce((value) => {
         setFilterValue(value);
-      }, 200), // Chờ 200ms sau khi người dùng ngừng gõ
+      }, 200),
     []
   );
 
@@ -118,29 +136,25 @@ export default function CategoryManagement() {
     clearError();
   };
 
-  // Xử lý thay đổi input
   const handleInputChange = (value) => {
-    setInputValue(value); // Cập nhật ngay giá trị hiển thị
-    debouncedSetFilterValue(value); // Cập nhật filterValue sau khi debounce
+    setInputValue(value);
+    debouncedSetFilterValue(value);
   };
-  // Reset về trang đầu khi filterValue thay đổi
+
   useEffect(() => {
     setPage(1);
   }, [filterValue]);
 
-  // Hiển thị lỗi nếu có
   useEffect(() => {
     if (error) {
       onOpen();
     }
   }, [error, onOpen]);
 
-  // Xử lý mở modal "Thêm"
   const handleAdd = () => {
     setAddModalOpen(true);
   };
 
-  // Xử lý lưu khi thêm
   const handleSaveAdd = async () => {
     try {
       await addCategory({ name: addName });
@@ -148,9 +162,8 @@ export default function CategoryManagement() {
         title: "Successfully",
         description: "Add success",
       });
-      // Refresh danh sách sau khi thêm
       if (filterValue) {
-        await searchCategoryByKeyword(filterValue, page, limit);
+        await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
       } else {
         await fetchCategories(page, limit);
       }
@@ -163,14 +176,12 @@ export default function CategoryManagement() {
     setAddName("");
   };
 
-  // Xử lý mở modal "Sửa"
   const handleEdit = (item) => {
     setSelectedItem(item);
     setEditName(item.name);
     setEditModalOpen(true);
   };
 
-  // Xử lý lưu khi chỉnh sửa
   const handleSaveEdit = async () => {
     if (selectedItem) {
       try {
@@ -180,9 +191,8 @@ export default function CategoryManagement() {
           title: "Successfully",
           description: "Update success",
         });
-        // Refresh danh sách sau khi sửa
         if (filterValue) {
-          await searchCategoryByKeyword(filterValue, page, limit);
+          await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
         } else {
           await fetchCategories(page, limit);
         }
@@ -197,13 +207,11 @@ export default function CategoryManagement() {
     }
   };
 
-  // Xử lý mở modal "Xóa"
   const handleDelete = (item) => {
     setSelectedItem(item);
     setDeleteModalOpen(true);
   };
 
-  // Xử lý xác nhận xóa
   const handleConfirmDelete = async () => {
     if (selectedItem) {
       try {
@@ -212,9 +220,8 @@ export default function CategoryManagement() {
           title: "Successfully",
           description: "Delete success",
         });
-        // Refresh danh sách sau khi xóa
         if (filterValue) {
-          await searchCategoryByKeyword(filterValue, page, limit);
+          await searchCategoryByKeyword(filterValue, page, limit, sortOrder, sortKey);
         } else {
           await fetchCategories(page, limit);
         }
@@ -234,10 +241,9 @@ export default function CategoryManagement() {
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         title="Oops!"
-        message={error}
+        message={error || errorMess}
         onClose={handleCloseModal}
       />
-      {/* Modal cho "Thêm" */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <ModalContent>
           <ModalHeader>Thêm danh mục</ModalHeader>
@@ -248,7 +254,7 @@ export default function CategoryManagement() {
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
               placeholder="Nhập tên danh mục"
-              isInvalid={addName !== "" } // Kiểm tra độ dài tên danh mục
+              isInvalid={addName !== ""} // Kiểm tra độ dài tên danh mục
               errorMessage="Tên danh mục phải có ít nhất 3 ký tự"
             />
           </ModalBody>
@@ -262,8 +268,6 @@ export default function CategoryManagement() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      {/* Modal cho "Sửa" */}
       <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)}>
         <ModalContent>
           <ModalHeader>Chỉnh sửa danh mục</ModalHeader>
@@ -285,30 +289,13 @@ export default function CategoryManagement() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      {/* Modal cho "Xóa" */}
-      <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
-        <ModalContent>
-          <ModalHeader>Xác nhận xóa</ModalHeader>
-          <ModalBody>
-            <p>
-              Bạn có chắc muốn xóa danh mục{" "}
-              <strong>{selectedItem?.name}</strong> không?
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setDeleteModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button color="danger" onPress={handleConfirmDelete}>
-              Xóa
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        itemName={selectedItem?.name}
+        onDelete={handleConfirmDelete}
+      />
       <h1 className="text-2xl font-semibold mb-4">Quản lý danh mục</h1>
-
       <TopContent
         filterValue={inputValue}
         setFilterValue={handleInputChange}
@@ -320,24 +307,20 @@ export default function CategoryManagement() {
         onAddNew={handleAdd}
         columns={columns}
       />
-
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner size="lg" />
-        </div>
-      ) : (
-        <TableComponent
-          items={categories} // Sử dụng categories trực tiếp từ store
-          columns={columns}
-          page={page}
-          setPage={setPage}
-          limit={limit}
-          totalPages={totalPages}
-          visibleColumns={visibleColumns}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
+      <TableComponent
+        items={categories}
+        columns={columns}
+        page={page}
+        setPage={setPage}
+        limit={limit}
+        totalPages={totalPages}
+        visibleColumns={visibleColumns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        isLoading={isLoading}
+        isSorting
+        onSort={handleSort}
+      />
     </div>
   );
 }

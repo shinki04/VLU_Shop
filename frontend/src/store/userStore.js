@@ -34,16 +34,13 @@ const useUserStore = create(
 
       clearError: () => set({ error: null }),
 
-      register: async (email, password, username
-        
-      ) => {
+      register: async (email, password, username) => {
         set({ isLoading: true, error: null });
         try {
           const response = await axios.post(`${API_URL}/register`, {
             email,
             password,
             username,
-           
           });
           set({
             user: response.data.user,
@@ -311,7 +308,7 @@ const useUserStore = create(
             withCredentials: true,
           });
           set({ isLoading: false });
-          return res.data.images[0]; // Trả về URL ảnh
+          return res.data.images[0].url; // Trả về URL ảnh
         } catch (err) {
           set({
             error: err.response?.data?.message || "Image upload failed",
@@ -324,7 +321,8 @@ const useUserStore = create(
     {
       name: "user-storage",
       partialize: (state) => ({
-        user: state.user,
+        user: { ...state.user, resetPasswordToken: undefined }, // Exclude resetPasswordToken from persisted state
+
         isAuthenticated: state.isAuthenticated,
         // users: state.users,
       }),

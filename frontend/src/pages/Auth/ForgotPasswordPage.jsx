@@ -20,7 +20,7 @@ import {
   CardBody,
   ToastProvider,
 } from "@heroui/react";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal";
 
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");

@@ -8,7 +8,7 @@ import {
 import CustomInputPass from "../../components/CustomInputPass";
 
 import useUserStore from "../../store/userStore";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "../../components/Modal/CustomModal";
 import {
   Modal,
   ModalContent,

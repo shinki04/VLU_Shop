@@ -18,7 +18,7 @@ export default function NotFound() {
           <div className="flex-[2_2_0%] justify-center items-center flex-col text-center h-full">
             <CardHeader className="flex-[2_2_0%] justify-center items-center">
               <FuzzyText
-                color="inherit"
+                color="initial"
                 baseIntensity={0.2}
                 hoverIntensity={0.6}
               >
@@ -27,7 +27,7 @@ export default function NotFound() {
             </CardHeader>
             <CardBody className="flex-[2_2_0%] justify-center items-center">
               <FuzzyText
-                color="inherit"
+                color="initial"
                 baseIntensity={0.2}
                 hoverIntensity={0.6}
                 fontSize={30}
