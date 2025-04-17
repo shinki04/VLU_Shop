@@ -11,7 +11,7 @@ import {
   updateUserById,
   verifyEmail,
   forgotPassword,
-  resetPassword
+  resetPassword,
 } from "../controllers/authController.js";
 import { authMiddleware, isAdmin } from "../middlewares/authMiddleware.js";
 
@@ -19,25 +19,8 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.post("/logout",authMiddleware, logoutUser);
-router.post("/verify-email",verifyEmail);
+router.post("/logout", authMiddleware, logoutUser);
+router.post("/verify-email", verifyEmail);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
-
-router.get("/", authMiddleware, isAdmin, getAllUsers);
-
-router
-  .route("/profile")
-  .get(authMiddleware, getCurrentUser)
-  .put(authMiddleware, updateCurrentUser);
-
-
-
-// Admin Route
-router
-  .route("/:id")
-  .get(authMiddleware,isAdmin,findUserById)
-  .delete(authMiddleware, isAdmin, deleteUserById)
-  .put(authMiddleware, isAdmin, updateUserById)
-
-  export default router;
+export default router;
