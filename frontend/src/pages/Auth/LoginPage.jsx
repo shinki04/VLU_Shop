@@ -27,12 +27,13 @@ import {
   addToast,
   ToastProvider,
 } from "@heroui/react";
+import { toastCustom } from "../../hooks/toastCustom";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, isLoading, error, user, clearError } = useUserStore();
+  const { login, isLoading, error, user, clearError,forgotPassword } = useUserStore();
   const [isVisible, setIsVisible] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
@@ -46,6 +47,15 @@ function LoginPage() {
     } catch (error) {
       console.log(error);
     }
+  };
+  const handleForgetPassword = async() => {
+   
+   
+      
+      navigate("/forgot-password");
+     
+  
+    
   };
 
   useEffect(() => {
@@ -85,13 +95,13 @@ function LoginPage() {
           <h2 className="text-3xl font-bold text-center mb-6">LOGIN</h2>
 
           {/* Tabs Section */}
-          <div className="flex flex-wrap gap-4 mb-6 justify-center">
+          {/* <div className="flex flex-wrap gap-4 mb-6 justify-center">
             <Tabs aria-label="Tabs colors" color="default" radius="full">
               <Tab key="photos" title="Photos" />
               <Tab key="music" title="Music" />
               <Tab key="videos" title="Videos" />
             </Tabs>
-          </div>
+          </div> */}
 
           {/* Form */}
           <Form className="flex flex-col gap-4" onSubmit={handleLogin}>
@@ -198,6 +208,17 @@ function LoginPage() {
               )}
             </Button>
 
+            <p className="text-center text-sm text-gray-600 mt-4">
+              Forrget Password?{" "}
+              <Button
+                onPress={handleForgetPassword}
+                >
+                  Reset Password
+                </Button>
+              <Link to="/register" className="text-blue-500 hover:underline">
+                Register here
+              </Link>
+            </p>
             {/* Register Link */}
             <p className="text-center text-sm text-gray-600 mt-4">
               Don’t have an account?{" "}

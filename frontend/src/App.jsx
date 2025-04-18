@@ -71,7 +71,7 @@ function App() {
       <div className="h-[var(--visual-viewport-height)]  min-h-screen container mx-auto">
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify-email" element={<EmailVerificationPage />} />

@@ -80,13 +80,13 @@ const RegisterPage = () => {
           <h2 className="text-3xl font-bold text-center mb-6">REGISTER</h2>
 
           {/* Tabs Section */}
-          <div className="flex flex-wrap gap-4 mb-6 justify-center">
+          {/* <div className="flex flex-wrap gap-4 mb-6 justify-center">
             <Tabs aria-label="Tabs colors" color="default" radius="full">
               <Tab key="photos" title="Photos" />
               <Tab key="music" title="Music" />
               <Tab key="videos" title="Videos" />
             </Tabs>
-          </div>
+          </div> */}
 
           {/* Form */}
           <Form className="flex flex-col gap-4" onSubmit={handleSignUp}>
@@ -159,7 +159,7 @@ const RegisterPage = () => {
             </div>
             {/* Password Field */}
             <div className="flex flex-wrap w-full">
-              <div className="flex items-center gap-2 mb-2">
+              {/* <div className="flex items-center gap-2 mb-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -175,7 +175,7 @@ const RegisterPage = () => {
                   />
                 </svg>
                 <label className="text-gray-700 font-medium">Password</label>
-              </div>
+              </div> */}
               <CustomInputPass
                 isRequired
                 name="password"
