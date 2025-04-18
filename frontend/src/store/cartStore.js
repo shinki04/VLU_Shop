@@ -2,6 +2,8 @@ import { create } from "zustand";
 import axios from "axios";
 import { toastCustom } from "../hooks/toastCustom";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const CART_API =
   import.meta.env.MODE === "development"
     ? "http://localhost:3000/api/cart"

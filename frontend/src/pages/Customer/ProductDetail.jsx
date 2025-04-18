@@ -76,11 +76,13 @@ const ProductDetail = () => {
     comment: "",
   });
 
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   // Hàm xử lý URL ảnh
   const getImageUrl = (image) => {
-    if (!image) return "/default-product.png";
+    if (!image) return "";
     if (image.startsWith("http")) return image;
-    return `http://localhost:3000${image}`;
+    return `${API_URL}${image}`;
   };
 
   useEffect(() => {

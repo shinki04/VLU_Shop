@@ -25,11 +25,8 @@ const storage = multer.diskStorage({
     let dest;
 
     if (uploadType === "multiple") {
-      // Sản phẩm
-
       dest = `./public/uploads/products/`;
     } else {
-      // Người dùng
       dest = "./public/uploads/user/";
     }
 
@@ -37,14 +34,15 @@ const storage = multer.diskStorage({
     cb(null, dest);
   },
   filename: (req, file, cb) => {
-    const extname = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${Date.now()}${extname}`);
+    // Giữ nguyên tên file gốc
+    const originalName = file.originalname;
+    cb(null, originalName);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  const filetypes = /jpe?g|png|webp/;
-  const mimetypes = /image\/jpe?g|image\/png|image\/webp/;
+  const filetypes = /jpe?g|png/;
+  const mimetypes = /image\/jpe?g|image\/png/;
 
   const extname = path.extname(file.originalname).toLowerCase();
   const mimetype = file.mimetype;
@@ -52,7 +50,7 @@ const fileFilter = (req, file, cb) => {
   if (filetypes.test(extname) && mimetypes.test(mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Chỉ chấp nhận ảnh (jpg, png, webp)"), false);
+    cb(new Error("Chỉ chấp nhận ảnh (jpg, png)"), false);
   }
 };
 
