@@ -13,9 +13,11 @@ import {
 export default function NotFound() {
   return (
     <div>
-      <div className="flex w-screen h-screen justify-center items-center">
-        <Card className="w-screen h-screen">
-          <div className="flex-[2_2_0%] justify-center items-center flex-col text-center h-full">
+      <div className="flex h-screen justify-center items-center">
+        <Card
+        //  className="w-screen h-screen"
+         >
+          <div className="flex-[2_2_0%] justify-center items-center flex-col text-center">
             <CardHeader className="flex-[2_2_0%] justify-center items-center">
               <FuzzyText
                 color="initial"

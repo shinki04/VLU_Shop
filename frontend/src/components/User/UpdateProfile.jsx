@@ -32,9 +32,7 @@ const UpdateProfile = () => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-    phone: "",
-    address: "",
-    password: "",
+   
   });
 
   const baseUrl =
@@ -49,9 +47,7 @@ const UpdateProfile = () => {
       setFormData({
         username: user.username || "",
         email: user.email || "",
-        phone: user.phone || "",
-        address: user.address || "",
-        password: "",
+       
       });
       setImagePreview(user.image ? `${baseUrl}${user.image}` : null);
       getCurrent();
@@ -153,7 +149,8 @@ const UpdateProfile = () => {
                 width={400}
                 isBlurred
                 isZoomed
-                loading="eager"
+                // loading="eager"
+                className="z-50 opacity-100"
                 // className="border-none bg-background/60 dark:bg-default-100/50"
               />
             </div>
@@ -180,14 +177,14 @@ const UpdateProfile = () => {
           <Divider />
           <CardBody>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              {/* <div>
                 <p className="text-sm font-semibold">Số điện thoại</p>
                 <p className="text-sm">{user?.phone || "Chưa cập nhật"}</p>
               </div>
               <div>
                 <p className="text-sm font-semibold">Địa chỉ</p>
                 <p className="text-sm">{user?.address || "Chưa cập nhật"}</p>
-              </div>
+              </div> */}
               <div>
                 <p className="text-sm font-semibold">Trạng thái xác thực</p>
                 <Chip

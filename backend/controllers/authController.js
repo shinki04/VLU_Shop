@@ -336,7 +336,7 @@ export const updateCurrentUser = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      const { username, email } = req.body;
+      const { username, email, image } = req.body;
 
       // Kiểm tra nếu người dùng không nhập mật khẩu hiện tại
       // if (!password) {

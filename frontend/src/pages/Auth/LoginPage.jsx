@@ -33,7 +33,8 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, isLoading, error, user, clearError,forgotPassword } = useUserStore();
+  const { login, isLoading, error, user, clearError, forgotPassword } =
+    useUserStore();
   const [isVisible, setIsVisible] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure(); // THÊM onOpen
 
@@ -48,18 +49,12 @@ function LoginPage() {
       console.log(error);
     }
   };
-  const handleForgetPassword = async() => {
-   
-   
-      
-      navigate("/forgot-password");
-     
-  
-    
+  const handleForgetPassword = async () => {
+    navigate("/forgot-password");
   };
 
   useEffect(() => {
-    if (user) {
+    if (user?.username) {
       addToast({
         title: "Success",
         description: "Welcome back " + user.username,
@@ -210,14 +205,12 @@ function LoginPage() {
 
             <p className="text-center text-sm text-gray-600 mt-4">
               Forrget Password?{" "}
-              <Button
-                onPress={handleForgetPassword}
-                >
-                  Reset Password
-                </Button>
-              <Link to="/register" className="text-blue-500 hover:underline">
-                Register here
-              </Link>
+              <a
+                href="/forgot-password"
+                className="text-blue-500 hover:underline"
+              >
+                Reset Password
+              </a>
             </p>
             {/* Register Link */}
             <p className="text-center text-sm text-gray-600 mt-4">

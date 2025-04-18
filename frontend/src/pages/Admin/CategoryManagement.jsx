@@ -286,7 +286,7 @@ export default function CategoryManagement() {
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
               placeholder="Nhập tên danh mục"
-              isInvalid={addName !== ""} // Kiểm tra độ dài tên danh mục
+              isInvalid={addName !== "" && addName.length < 3} // Kiểm tra độ dài tên danh mục
               errorMessage="Tên danh mục phải có ít nhất 3 ký tự"
             />
           </ModalBody>
