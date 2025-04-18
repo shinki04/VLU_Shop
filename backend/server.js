@@ -18,6 +18,7 @@ const app = express();
 connectDB();
 
 const __dirname = path.resolve();
+app.use("./public/uploads", express.static(path.join(__dirname + "public/uploads")));
 
 // Middleware
 app.use(morgan("dev"));
@@ -33,17 +34,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Cấu hình đường dẫn static cho uploads
-app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
-
 // Static files for production
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));
   app.get("*", (req, res) => {
     res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
   });
+} else {
+  // Cấu hình cho môi trường development
+  app.use("/public/uploads", express.static(path.join(__dirname, "public/uploads")));
 }
-
 // Routes
 app.use("/api/auth", authRoute);
 app.use("/api/category", categoryRoutes);
@@ -53,7 +53,6 @@ app.use("/api/products", productRoutes);
 app.use("/api/reviews", reviewRoutes); // Đường dẫn cho reviews
 app.use("/api/cart", cartRoutes); // Đường dẫn cho giỏ hàng
 app.use("/api/orders", orderRoutes); // Đường dẫn cho đơn hàng
-
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
