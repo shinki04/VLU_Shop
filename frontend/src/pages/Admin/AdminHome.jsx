@@ -89,16 +89,16 @@ export default function HomePage() {
 
   // Sample product data for "The Best Dress for the Best Woman"
   const bestDresses = [
-    { name: 'Product Name', price: '$123.00', image: 'https://via.placeholder.com/300x400?text=Dress+1' },
-    { name: 'Product Name', price: '$123.00', image: 'https://via.placeholder.com/300x400?text=Dress+2' },
-    { name: 'Product Name', price: '$123.00', image: 'https://via.placeholder.com/300x400?text=Dress+3' },
+    { name: 'Đầm Otis', price: '1.700.000 đ', image: 'https://product.hstatic.net/200000623993/product/mg25_-_lb_no.09_x_logo-11_aefa283ede97409e87a6aff47b1999a3_large.jpg' },
+    { name: 'Đầm Regina', price: '1.509.000 đ', image: 'https://product.hstatic.net/200000623993/product/mg25_-_lb_no.08_x_logo-28_4bb84c804d2247c49e5fe2954552548b_large.jpg' },
+    { name: 'Đầm Kelin', price: '1.650.000 đ', image: 'https://product.hstatic.net/200000623993/product/mg25_-_lb_no.09_x_logo-63_1730e3b0935f4f3995bc11dff48477f8_large.jpg' },
   ];
 
   // Sample product data for "Best Outfit for Your Happiness"
   const bestOutfits = [
-    { name: 'Product Name', price: '$123.00', image: 'https://via.placeholder.com/300x400?text=Outfit+1' },
-    { name: 'Product Name', price: '$123.00', image: 'https://via.placeholder.com/300x400?text=Outfit+2' },
-    { name: 'Product Name', price: '$123.00', image: 'https://via.placeholder.com/300x400?text=Outfit+3' },
+    { name: 'Áo Ducie', price: '790.000 đ', image: 'https://product.hstatic.net/200000623993/product/mg25_-_lb_no.09_x_logo-24_40a48d1ec65044f7b386ece1c90b941c_large.jpg' },
+    { name: 'Áo Sary', price: '990.000 đ', image: 'https://product.hstatic.net/200000623993/product/mg25_-_lb_no.08_x_logo-46_1d8cbc3f191f456f828c86383ddf3b91_large.jpg' },
+    { name: 'Áo Kasy', price: '1.560.000 đ', image: 'https://product.hstatic.net/200000623993/product/mg25-lb_no.04_x_logo-44_2e4e5649316745d6b691099f3b4de56c_large.jpg' },
   ];
 
   return (
