@@ -6,15 +6,9 @@ const USERS_URL =
   import.meta.env.MODE === "development"
     ? "http://localhost:3000/api/users"
     : "/api/users";
-const API_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/auth"
-    : "/api/auth";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-const UPLOAD_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/upload"
-    : "/api/upload";
+const UPLOAD_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 axios.defaults.withCredentials = true;
 
 const useUserStore = create(
@@ -183,16 +177,12 @@ const useUserStore = create(
       fetchUsers: async (page = 1, limit = 5) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.get(USERS_URL, {
-            params: { page, limit },
-          });
-
+          const response = await axios.get(`${API_URL}/api/users?page=${page}&limit=${limit}`);
           set({
-            users: res.data.users,
-            total: res.data.total,
-            page: res.data.page,
-            limit: res.data.limit,
-            isLoading: false,
+            users: response.data.users,
+            total: response.data.totalUsers,
+            page: response.data.currentPage,
+            limit: response.data.limit,
           });
         } catch (err) {
           set({
@@ -200,6 +190,8 @@ const useUserStore = create(
             isLoading: false,
           });
           throw err;
+        } finally {
+          set({ isLoading: false });
         }
       },
       getCurrentUser: async () => {

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import axios, { all } from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const REVIEW_API =
   import.meta.env.MODE === "development"
     ? "http://localhost:3000/api/reviews"

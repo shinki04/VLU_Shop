@@ -44,7 +44,7 @@ const ProductList = () => {
   }, [fetchAllProducts]);
 
   // Lọc sản phẩm
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = (products || []).filter((product) => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -74,7 +74,8 @@ const ProductList = () => {
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
   // Lấy danh sách categories duy nhất
-  const categories = products.reduce((acc, product) => {
+  const categories = (products || []).reduce((acc, product) => {
+    if (!product.category) return acc;
     const existingCategory = acc.find(cat => cat._id === product.category._id);
     if (!existingCategory) {
       acc.push(product.category);
@@ -225,10 +226,13 @@ const ProductList = () => {
         </div>
       </div>
 
-      {/* Products Grid */}
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center items-center min-h-[400px]">
           <Spinner size="lg" />
+        </div>
+      ) : products?.length === 0 ? (
+        <div className="text-center text-gray-500">
+          Không tìm thấy sản phẩm nào
         </div>
       ) : (
         <>

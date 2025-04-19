@@ -17,7 +17,7 @@ import AdminHome from "./pages/Admin/AdminHome";
 import UserManagement from "./pages/Admin/UserManagement";
 import NotFound from "./pages/NotFound";
 import ProductManagement from "./pages/Admin/ProductManagement";
-import ReviewManagement from "./pages/Admin/reviewManagement";
+import ReviewManagement from "./pages/Admin/ReviewManagement";
 import OrderManagement from "./pages/Admin/OrderManagement";
 import UpdateProfile from "./components/User/UpdateProfile";
 import Cart from "./pages/Customer/Cart";
