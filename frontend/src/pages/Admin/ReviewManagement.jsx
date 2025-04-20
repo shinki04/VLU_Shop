@@ -29,8 +29,12 @@ import {
   TableColumn,
   TableBody,
   TableRow,
-  TableCell,Card,CardHeader,
+  TableCell,
+  Card,
+  CardHeader,
   Avatar,
+  CardBody,
+  Divider,
 } from "@heroui/react";
 import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
@@ -178,7 +182,7 @@ const ReviewManagement = () => {
     try {
       setErrorMess("");
       setIsRequesting(true);
-      
+
       let apiSortKey = newSortKey;
       if (newSortKey === "rating") {
         apiSortKey = "avgRating";
@@ -362,51 +366,81 @@ const ReviewManagement = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Quản lý đánh giá</h1>
           </div>
+        </CardHeader>
+        <CardBody className="overflow-x-auto">
           <div className="flex gap-4">
             <Input
-              placeholder="Tìm kiếm theo tên người dùng hoặc sản phẩm..."
+              placeholder="Tìm kiếm theo tên người dùng hoặc sản phẩm"
               value={inputValue}
               onChange={handleInputChange}
-              startContent={<Search className="w-4 h-4" />}
-              className="max-w-xs"
+              startContent={<Search className="" />}
+              className="w-full"
             />
             <Select
               label="Lọc theo đánh giá"
               value={ratingRange[0].toString()}
-              onChange={(e) => setRatingRange([parseInt(e.target.value), ratingRange[1]])}
-              className="w-40"
+              onChange={(e) =>
+                setRatingRange([parseInt(e.target.value), ratingRange[1]])
+              }
+              className="w-full"
+              size="sm"
             >
-              <SelectItem key="1" value="1">1 sao</SelectItem>
-              <SelectItem key="2" value="2">2 sao</SelectItem>
-              <SelectItem key="3" value="3">3 sao</SelectItem>
-              <SelectItem key="4" value="4">4 sao</SelectItem>
-              <SelectItem key="5" value="5">5 sao</SelectItem>
+              <SelectItem key="1" value="1">
+                1 sao
+              </SelectItem>
+              <SelectItem key="2" value="2">
+                2 sao
+              </SelectItem>
+              <SelectItem key="3" value="3">
+                3 sao
+              </SelectItem>
+              <SelectItem key="4" value="4">
+                4 sao
+              </SelectItem>
+              <SelectItem key="5" value="5">
+                5 sao
+              </SelectItem>
             </Select>
             <Select
               label="Sắp xếp theo"
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value)}
-              className="w-40"
+              className="w-full"
+              size="sm"
             >
-              <SelectItem key="createdAt" value="createdAt">Ngày đánh giá</SelectItem>
-              <SelectItem key="rating" value="rating">Số sao</SelectItem>
+              <SelectItem key="createdAt" value="createdAt">
+                Ngày đánh giá
+              </SelectItem>
+              <SelectItem key="rating" value="rating">
+                Số sao
+              </SelectItem>
             </Select>
             <Button
               isIconOnly
               variant="flat"
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+              size="xl"
+              className="w-80 rounded-lg	"
+              onPress={() =>
+                setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+              }
             >
-              {sortOrder === "desc" ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
+              {sortOrder === "desc" ? (
+                <SortDesc className="w-4 h-4" />
+              ) : (
+                <SortAsc className="w-4 h-4" />
+              )}
             </Button>
           </div>
-        </CardHeader>
+        </CardBody>
       </Card>
 
       {/* Select lọc trạng thái đơn hàng */}
-      <div className="mb-4 flex flex-wrap gap-4 items-end">
-        <div className="w-full md:w-96 space-y-2">
-          <label className="text-sm font-medium">Lọc theo số sao ({ratingRange[0]} - {ratingRange[1]} sao)</label>
-          <Slider 
+      <div className="my-10 flex flex-wrap gap-4 items-end">
+        <div className="w-full md:w-96 space-y-2 sm:2">
+          <label className="text-sm font-medium">
+            Lọc theo số sao ({ratingRange[0]} - {ratingRange[1]} sao)
+          </label>
+          <Slider
             size="sm"
             step={0.5}
             minValue={0}
@@ -423,7 +457,7 @@ const ReviewManagement = () => {
               { value: 5, label: "5" },
             ]}
             showTooltip={true}
-            tooltipContent={value => `${value} sao`}
+            tooltipContent={(value) => `${value} sao`}
           />
         </div>
       </div>
@@ -448,7 +482,12 @@ const ReviewManagement = () => {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar
-                      src={review.username.startsWith('http') ? review.username : products.find(p => p._id === review.productId)?.image || ''}
+                      src={
+                        review.username.startsWith("http")
+                          ? review.username
+                          : products.find((p) => p._id === review.productId)
+                              ?.image || ""
+                      }
                       alt={review.username}
                       size="sm"
                     />
@@ -462,9 +501,15 @@ const ReviewManagement = () => {
                       <Star
                         key={i}
                         className={`w-4 h-4 ${
-                          i < parseFloat(review.rating) ? "text-yellow-400" : "text-gray-300"
+                          i < parseFloat(review.rating)
+                            ? "text-yellow-400"
+                            : "text-gray-300"
                         }`}
-                        fill={i < parseFloat(review.rating) ? "currentColor" : "none"}
+                        fill={
+                          i < parseFloat(review.rating)
+                            ? "currentColor"
+                            : "none"
+                        }
                       />
                     ))}
                   </div>

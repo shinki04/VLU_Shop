@@ -1,7 +1,7 @@
 import asyncHandler from "../middlewares/asyncHandler.js";
 import Order from "../models/orderModel.js";
 import mongoose from "mongoose";
-
+import Product from "../models/productModel.js";
 
 // Utility Function
 function calcPrices(orderItems) {
@@ -44,46 +44,70 @@ const createOrder = asyncHandler(async (req, res) => {
     shippingPrice: clientShippingPrice,
     totalPrice: clientTotalPrice,
   } = req.body;
-  
-  if (!orderItems) {
-    try{
-      if (orderItems.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Không có sản phẩm nào",
-        });
-      }
-    }catch(err){
-      return res.status(400).json({
-        success: false,
-        message: "Không có sản phẩm nào",
-        error: err.message,
-      });
-    }
-   
+
+  if (!orderItems || orderItems.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Không có sản phẩm nào",
+    });
   }
+
   if (!shippingAddress) {
     return res.status(400).json({
       success: false,
       message: "Địa chỉ giao hàng không được để trống",
     });
   }
+
   if (!paymentMethod) {
     return res.status(400).json({
       success: false,
-      message: "Phương thức thanh toán không được để trống",  
+      message: "Phương thức thanh toán không được để trống",
     });
   }
-  
+
+  // Kiểm tra tồn kho trước khi tạo đơn hàng
+  for (const item of orderItems) {
+    const product = await Product.findById(item.product);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: `Sản phẩm ${item.name} không tồn tại`,
+      });
+    }
+    if (product.countInStock < (item.qty || item.quantity)) {
+      return res.status(400).json({
+        success: false,
+        message: `Sản phẩm ${item.name} không đủ tồn kho (còn ${product.countInStock})`,
+      });
+    }
+  }
+
   // Tính toán lại giá trị ở server
   const serverPrices = calcPrices(orderItems);
-  
-  // So sánh giá trị từ client và server (tùy chọn)
+
+  // So sánh giá trị từ client và server 
   const priceDifference = Math.abs(serverPrices.totalPrice - clientTotalPrice);
   if (priceDifference > 0.1) {
-    console.log(`Phát hiện sự khác biệt giá: Client: ${clientTotalPrice}, Server: ${serverPrices.totalPrice}`);
+    console.log(
+      `Phát hiện sự khác biệt giá: Client: ${clientTotalPrice}, Server: ${serverPrices.totalPrice}`
+    );
   }
-  
+
+  // Trừ tồn kho
+  for (const item of orderItems) {
+    const product = await Product.findById(item.product);
+    if (product) {
+      console.log(
+        `Trừ tồn kho sản phẩm ${product.name}: ${product.countInStock} - ${item.qty || item.quantity} = ${
+          product.countInStock - (item.qty || item.quantity)
+        }`
+      );
+      product.countInStock -= item.qty || item.quantity;
+      await product.save();
+    }
+  }
+
   const order = new Order({
     orderItems: orderItems.map((item) => ({
       ...item,
@@ -142,7 +166,6 @@ const getOrderById = asyncHandler(async (req, res) => {
   );
 
   if (order) {
-    // Kiểm tra nếu người dùng là admin hoặc chủ sở hữu đơn hàng
     if (req.user.role == "admin" || order.user._id.toString() === req.user._id.toString()) {
       res.status(200).json({
         success: true,
@@ -166,7 +189,6 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (order) {
-    // Kiểm tra nếu người dùng là admin hoặc chủ sở hữu đơn hàng
     if (req.user.isAdmin || order.user.toString() === req.user._id.toString()) {
       order.isPaid = true;
       order.paidAt = Date.now();
@@ -219,12 +241,10 @@ const updateOrderToDelivered = asyncHandler(async (req, res) => {
 // @route   GET /api/orders
 // @access  Private/Admin
 const getOrders = asyncHandler(async (req, res) => {
-  // Phân trang
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Tìm kiếm
   const keyword = req.query.q
     ? {
         $or: [
@@ -239,7 +259,6 @@ const getOrders = asyncHandler(async (req, res) => {
       }
     : {};
 
-  // Lọc theo trạng thái
   let statusFilter = {};
   if (req.query.status) {
     if (req.query.status === "paid") {
@@ -253,28 +272,22 @@ const getOrders = asyncHandler(async (req, res) => {
     }
   }
 
-  // Lọc theo sản phẩm
   const productFilter = req.query.productId
     ? { "orderItems.product": new mongoose.Types.ObjectId(req.query.productId) }
     : {};
 
-  // Kết hợp các điều kiện lọc
   const filter = {
     ...keyword,
     ...statusFilter,
     ...productFilter,
   };
 
-  // Sắp xếp
   const sortBy = req.query.sortBy || "createdAt";
   const sortOrder = req.query.sortOrder || "desc";
   const sortOptions = {};
   sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-  // Đếm tổng số đơn hàng
   const count = await Order.countDocuments(filter);
-
-  // Lấy danh sách đơn hàng
   const orders = await Order.find(filter)
     .populate("user", "id name email")
     .sort(sortOptions)
@@ -301,8 +314,21 @@ const deleteOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (order) {
-    // Kiểm tra nếu người dùng là admin hoặc chủ sở hữu đơn hàng
     if (req.user.isAdmin || order.user.toString() === req.user._id.toString()) {
+      // Hoàn tồn kho
+      for (const item of order.orderItems) {
+        const product = await Product.findById(item.product);
+        if (product) {
+          console.log(
+            `Hoàn tồn kho sản phẩm ${product.name}: ${product.countInStock} + ${item.qty || item.quantity} = ${
+              product.countInStock + (item.qty || item.quantity)
+            }`
+          );
+          product.countInStock += item.qty || item.quantity;
+          await product.save();
+        }
+      }
+
       await Order.deleteOne({ _id: order._id });
       res.status(200).json({
         success: true,
@@ -329,9 +355,7 @@ const updateOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (order) {
-    // Kiểm tra nếu người dùng là admin
     if (req.user.role === "admin") {
-      // Cập nhật trạng thái thanh toán nếu có
       if (req.body.isPaid !== undefined) {
         order.isPaid = req.body.isPaid;
         if (req.body.isPaid) {
@@ -341,7 +365,6 @@ const updateOrder = asyncHandler(async (req, res) => {
         }
       }
 
-      // Cập nhật trạng thái giao hàng nếu có
       if (req.body.isDelivered !== undefined) {
         order.isDelivered = req.body.isDelivered;
         if (req.body.isDelivered) {
@@ -371,7 +394,6 @@ const updateOrder = asyncHandler(async (req, res) => {
 // @route   GET /api/orders/stats
 // @access  Private/Admin
 const getOrderStats = asyncHandler(async (req, res) => {
-  // Thống kê tổng quan
   const totalOrders = await Order.countDocuments();
   const totalPaidOrders = await Order.countDocuments({ isPaid: true });
   const totalDeliveredOrders = await Order.countDocuments({
@@ -381,7 +403,6 @@ const getOrderStats = asyncHandler(async (req, res) => {
     $or: [{ isPaid: false }, { isDelivered: false }],
   });
 
-  // Tổng doanh thu
   const revenueStats = await Order.aggregate([
     { $match: { isPaid: true } },
     { $group: { _id: null, totalRevenue: { $sum: "$totalPrice" } } },
@@ -389,7 +410,6 @@ const getOrderStats = asyncHandler(async (req, res) => {
   const totalRevenue =
     revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
 
-  // Thống kê theo thời gian (7 ngày gần nhất)
   const last7Days = new Date();
   last7Days.setDate(last7Days.getDate() - 7);
 
@@ -435,44 +455,77 @@ const createOrderByAdmin = asyncHandler(async (req, res) => {
     shippingPrice: clientShippingPrice,
     totalPrice: clientTotalPrice,
   } = req.body;
-  
+
   if (!orderItems || orderItems.length === 0) {
     return res.status(400).json({
       success: false,
       message: "Không có sản phẩm nào",
     });
   }
-  
+
   if (!shippingAddress) {
     return res.status(400).json({
       success: false,
       message: "Địa chỉ giao hàng không được để trống",
     });
   }
-  
+
   if (!paymentMethod) {
     return res.status(400).json({
       success: false,
-      message: "Phương thức thanh toán không được để trống",  
+      message: "Phương thức thanh toán không được để trống",
     });
   }
-  
+
   if (!userId) {
     return res.status(400).json({
       success: false,
       message: "ID người dùng không được để trống",
     });
   }
-  
+
+  // Kiểm tra tồn kho trước khi tạo đơn hàng
+  for (const item of orderItems) {
+    const product = await Product.findById(item.product);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: `Sản phẩm ${item.name} không tồn tại`,
+      });
+    }
+    if (product.countInStock < (item.qty || item.quantity)) {
+      return res.status(400).json({
+        success: false,
+        message: `Sản phẩm ${item.name} không đủ tồn kho (còn ${product.countInStock})`,
+      });
+    }
+  }
+
   // Tính toán lại giá trị ở server
   const serverPrices = calcPrices(orderItems);
-  
+
   // So sánh giá trị từ client và server (tùy chọn)
   const priceDifference = Math.abs(serverPrices.totalPrice - clientTotalPrice);
   if (priceDifference > 0.1) {
-    console.log(`Phát hiện sự khác biệt giá: Client: ${clientTotalPrice}, Server: ${serverPrices.totalPrice}`);
+    console.log(
+      `Phát hiện sự khác biệt giá: Client: ${clientTotalPrice}, Server: ${serverPrices.totalPrice}`
+    );
   }
-  
+
+  // Trừ tồn kho
+  for (const item of orderItems) {
+    const product = await Product.findById(item.product);
+    if (product) {
+      console.log(
+        `Trừ tồn kho sản phẩm ${product.name}: ${product.countInStock} - ${item.qty || item.quantity} = ${
+          product.countInStock - (item.qty || item.quantity)
+        }`
+      );
+      product.countInStock -= item.qty || item.quantity;
+      await product.save();
+    }
+  }
+
   const order = new Order({
     orderItems: orderItems.map((item) => ({
       ...item,
@@ -485,8 +538,8 @@ const createOrderByAdmin = asyncHandler(async (req, res) => {
     taxPrice: serverPrices.taxPrice,
     shippingPrice: serverPrices.shippingPrice,
     totalPrice: serverPrices.totalPrice,
-    isPaid: false, // Admin có thể đánh dấu đã thanh toán ngay
-    paidAt: Date.now(),
+    isPaid: false,
+    paidAt: null,
   });
 
   const createdOrder = await order.save();

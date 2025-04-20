@@ -1,4 +1,4 @@
-import useUserStore from "../../store/userStore";
+import useUserStore from "../../store/userStore.js";
 import React, { useEffect, useState, useMemo } from "react";
 import CustomModal from "../../components/Modal/CustomModal.jsx";
 import { PasswordCriteria } from "../../components/PasswordStrengthMeter";
@@ -67,7 +67,7 @@ export default function UserManagement() {
   const [inputValue, setInputValue] = useState("");
   const [filterValue, setFilterValue] = useState("");
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
-
+  console.log(total, limit, totalPages);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -93,7 +93,7 @@ export default function UserManagement() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-  const serverURL = import.meta.env.DEV ? "http://localhost:3000" : "";
+  const serverURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   // Handle error display
   useEffect(() => {

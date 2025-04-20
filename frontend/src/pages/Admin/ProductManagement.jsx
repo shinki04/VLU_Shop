@@ -29,6 +29,7 @@ import { toastCustom } from "../../hooks/toastCustom";
 import { TableComponent } from "../../components/Table/Table";
 import { TopContent } from "../../components/Table/TopContent";
 import { debounce } from "lodash";
+import { formatPrice } from "../../utils/formatters";
 
 const columns = [
   { name: "STT", uid: "index" },
@@ -84,7 +85,7 @@ export default function ProductManagement() {
   const [inputValue, setInputValue] = useState("");
   const [searchValue, setSearchValue] = useState("");
   const [selectedCategories, setSelectedCategories] = useState(new Set());
-  const [priceRange, setPriceRange] = useState([0, 999999999]);
+  const [priceRange, setPriceRange] = useState([0, 5000000]);
 
   // Tính tổng số trang
   const totalPages = useMemo(() => {
@@ -103,7 +104,6 @@ export default function ProductManagement() {
   const [addPrice, setAddPrice] = useState("");
   const [addCategory, setAddCategory] = useState("");
   const [addCountInStock, setAddCountInStock] = useState("");
-  const [addBrand, setAddBrand] = useState("");
   const [addImages, setAddImages] = useState([]);
 
   // Dữ liệu cho modal Sửa
@@ -112,7 +112,6 @@ export default function ProductManagement() {
   const [editPrice, setEditPrice] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editCountInStock, setEditCountInStock] = useState("");
-  const [editBrand, setEditBrand] = useState("");
   const [editImages, setEditImages] = useState([]);
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -150,7 +149,7 @@ export default function ProductManagement() {
           searchValue ||
           selectedCategories.size > 0 ||
           priceRange[0] > 0 ||
-          priceRange[1] < 999999999 ||
+          priceRange[1] < 5000000 ||
           sortKey // Kiểm tra nếu có sắp xếp
         ) {
           await filterProducts(
@@ -219,7 +218,7 @@ export default function ProductManagement() {
   // Xóa bộ lọc
   const clearFilters = () => {
     setSelectedCategories(new Set());
-    setPriceRange([0, 999999999]);
+    setPriceRange([0, 5000000]);
     setSearchValue("");
     setInputValue("");
     setSortKey(null); // Xóa trạng thái sắp xếp
@@ -269,7 +268,7 @@ export default function ProductManagement() {
         price: parseFloat(addPrice),
         category: addCategory,
         countInStock: parseInt(addCountInStock),
-        brand: addBrand,
+
         images: imageUrls,
       };
 
@@ -286,7 +285,7 @@ export default function ProductManagement() {
       setAddPrice("");
       setAddCategory("");
       setAddCountInStock("");
-      setAddBrand("");
+
       setAddImages([]);
 
       // Làm mới danh sách sản phẩm với bộ lọc hiện tại
@@ -296,7 +295,7 @@ export default function ProductManagement() {
         searchValue ||
         selectedCategories.size > 0 ||
         priceRange[0] > 0 ||
-        priceRange[1] < 999999999 ||
+        priceRange[1] < 5000000 ||
         sortKey
       ) {
         await filterProducts(
@@ -359,7 +358,7 @@ export default function ProductManagement() {
         price: parseFloat(editPrice),
         category: editCategory,
         countInStock: parseInt(editCountInStock),
-        brand: editBrand,
+
         images: finalImages,
       };
 
@@ -376,7 +375,7 @@ export default function ProductManagement() {
       setEditPrice("");
       setEditCategory("");
       setEditCountInStock("");
-      setEditBrand("");
+
       setEditImages([]);
       setSelectedItem(null);
 
@@ -387,7 +386,7 @@ export default function ProductManagement() {
         searchValue ||
         selectedCategories.size > 0 ||
         priceRange[0] > 0 ||
-        priceRange[1] < 999999999 ||
+        priceRange[1] < 5000000 ||
         sortKey
       ) {
         await filterProducts(
@@ -431,7 +430,7 @@ export default function ProductManagement() {
         searchValue ||
         selectedCategories.size > 0 ||
         priceRange[0] > 0 ||
-        priceRange[1] < 999999999 ||
+        priceRange[1] < 5000000 ||
         sortKey
       ) {
         await filterProducts(
@@ -520,13 +519,7 @@ export default function ProductManagement() {
                 placeholder="Nhập số lượng tồn kho"
                 min="0"
               />
-              <Input
-                isRequired
-                label="Thương hiệu"
-                value={addBrand}
-                onChange={(e) => setAddBrand(e.target.value)}
-                placeholder="Nhập thương hiệu"
-              />
+
               <ImagePreviewSection
                 editImage={addImages}
                 setEditImage={setAddImages}
@@ -611,13 +604,7 @@ export default function ProductManagement() {
                     placeholder="Nhập số lượng tồn kho"
                     min="0"
                   />
-                  <Input
-                    isRequired
-                    label="Thương hiệu"
-                    value={editBrand}
-                    onChange={(e) => setEditBrand(e.target.value)}
-                    placeholder="Nhập thương hiệu"
-                  />
+
                   <ImagePreviewSection
                     editImage={editImages}
                     setEditImage={setEditImages}
@@ -729,10 +716,10 @@ export default function ProductManagement() {
               style: "currency",
               currency: "VND",
             }}
-            defaultValue={[0, 999999999]}
+            defaultValue={[0, 5000000]}
             step={100000}
             minValue={0}
-            maxValue={999999999}
+            maxValue={5000000}
             value={priceRange}
             onChange={(value) => {
               setPriceRange(value);
@@ -745,7 +732,7 @@ export default function ProductManagement() {
         {/* Nút xóa bộ lọc */}
         {(selectedCategories.size > 0 ||
           priceRange[0] > 0 ||
-          priceRange[1] < 999999999) && (
+          priceRange[1] <= 5000000) && (
           <Button variant="flat" color="danger" onPress={clearFilters}>
             Xóa bộ lọc
           </Button>
@@ -772,7 +759,7 @@ export default function ProductManagement() {
           setEditPrice(product.price);
           setEditCategory(originalProduct?.category?._id || null);
           setEditCountInStock(product.countInStock);
-          setEditBrand(product.brand);
+
           setEditImages(product.images);
           setEditModalOpen(true);
         }}

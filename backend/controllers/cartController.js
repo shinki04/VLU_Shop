@@ -15,12 +15,10 @@ export const addToCart = asyncHandler(async (req, res) => {
     // Kiểm tra số lượng
     const qty = parseInt(quantity, 10);
     if (qty < 1 || isNaN(qty)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Quantity must be at least 1 and is number",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be at least 1 and is number",
+      });
     }
 
     // Tìm sản phẩm
@@ -145,7 +143,7 @@ export const updateCart = asyncHandler(async (req, res) => {
   if (!items || !Array.isArray(items)) {
     return res.status(400).json({
       success: false,
-      message: "Invalid items data"
+      message: "Invalid items data",
     });
   }
 
@@ -205,19 +203,19 @@ export const updateCart = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      cart
+      cart,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 // Xóa giỏ hàng hoặc nhiều sản phẩm
 export const deleteCart = asyncHandler(async (req, res) => {
-  const { productIds } = req.body; // Mảng các productId cần xoá
+  const { productIds } = req.body;
 
   try {
     let cart = await Cart.findOne({ user: req.user._id });
@@ -228,17 +226,18 @@ export const deleteCart = asyncHandler(async (req, res) => {
     }
 
     if (Array.isArray(productIds) && productIds.length > 0) {
-      // Xóa các sản phẩm có trong mảng productIds
       cart.items = cart.items.filter(
         (item) => !productIds.includes(item.product.toString())
       );
     } else {
-      // Nếu không truyền productIds, xóa toàn bộ giỏ hàng
       cart.items = [];
     }
 
     await cart.save();
-    await cart.populate("items.product", "name image price");
+    await cart.populate(
+      "items.product",
+      "name image price countInStock images"
+    );
 
     res.status(200).json({
       success: true,
@@ -259,7 +258,14 @@ export const deleteCart = asyncHandler(async (req, res) => {
 });
 
 export const filterCartItems = asyncHandler(async (req, res) => {
-  const { search, category, brand, sortBy, sortOrder = "asc", userId } = req.query;
+  const {
+    search,
+    category,
+    brand,
+    sortBy,
+    sortOrder = "asc",
+    userId,
+  } = req.query;
 
   const filter = { user: userId }; // Nếu cart theo user
 

@@ -14,9 +14,6 @@ import {
 import { formatPrice } from "../../utils/formatters";
 import { toastCustom } from "../../hooks/toastCustom";
 
-// const API_URL = import.meta.env.MODE === "development"
-//   ? "http://localhost:3000"
-//   : "";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const Cart = () => {
@@ -34,7 +31,6 @@ const Cart = () => {
     fetchCart();
   }, [fetchCart]);
 
-  // Hàm xử lý URL ảnh
   const getImageUrl = (image) => {
     if (!image) return "/default-product.png";
     return image.startsWith("http") ? image : `${API_URL}${image}`;
@@ -50,17 +46,16 @@ const Cart = () => {
     }
 
     try {
-      // Tạo một bản sao của items và cập nhật số lượng cho item được chọn
       const updatedItems = items.map((cartItem) => {
         if (cartItem._id === item._id) {
           return {
             product: cartItem.product._id,
-            quantity: newQty
+            quantity: newQty,
           };
         }
         return {
           product: cartItem.product._id,
-          quantity: cartItem.quantity
+          quantity: cartItem.quantity,
         };
       });
 
@@ -79,7 +74,11 @@ const Cart = () => {
 
   const handleRemoveFromCart = async (itemId) => {
     try {
-      await deleteFromCart([itemId]);
+      await deleteFromCart(itemId); // Truyền itemId trực tiếp
+      toastCustom({
+        title: "Success",
+        description: "Đã xóa sản phẩm khỏi giỏ hàng",
+      });
     } catch (error) {
       toastCustom({
         title: "Error",
@@ -246,4 +245,4 @@ const Cart = () => {
   );
 };
 
-export default Cart;
+export default Cart;  

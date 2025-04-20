@@ -23,7 +23,7 @@ import {
 } from "@heroui/react";
 import { ShoppingCart, Search, Filter, X, Eye } from "lucide-react";
 import { formatPrice } from "../../utils/formatters";
-
+import { toastCustom } from "../../hooks/toastCustom";
 const ProductList = () => {
   const navigate = useNavigate();
   const { products, fetchAllProducts, isLoading } = useProductStore();
@@ -37,7 +37,7 @@ const ProductList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
 
-  const baseUrl = import.meta.env.NODE_ENV === "production" ? "" : "http://localhost:3000";
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   useEffect(() => {
     fetchAllProducts();
@@ -83,8 +83,18 @@ const ProductList = () => {
     return acc;
   }, []);
 
-  const handleAddToCart = (product) => {
-    addToCart({ productId: product._id, quantity: 1 });
+  const handleAddToCart = async (product) => {
+    try {
+      await addToCart({ productId: product._id, quantity: 1 });
+      toastCustom({
+        title: "Thành công",
+        description: "Đã thêm sản phẩm vào giỏ hàng",
+        status: "success",
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    }
+    
   };
 
   const getImageUrl = (product) => {

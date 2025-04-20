@@ -13,6 +13,7 @@ import {
 import { PaginationControls } from "../../components/Pagination/PaginationControls";
 import { UserRoundX, UserRoundCheck } from "lucide-react";
 import { color } from "framer-motion";
+import { formatPrice } from "../../utils/formatters";
 
 // Icon tùy chỉnh cho "Sửa" (bút chì)
 const EditIcon = ({ size = 20 }) => (
@@ -303,7 +304,12 @@ export const TableComponent = ({
             {item.rating}
           </Chip>
         );
-
+      case "price":
+        return (
+          <span>
+            {formatPrice(item.price)}
+          </span>
+        );
       default:
         return item[columnKey] || ""; // Giá trị mặc định
     }
@@ -332,7 +338,7 @@ export const TableComponent = ({
                     console.log(`TableComponent: Changing page to ${newPage}`);
                     setPage(newPage);
                   }
-                }} 
+                }}
                 totalPages={totalPages}
               />
             )

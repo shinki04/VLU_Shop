@@ -32,12 +32,22 @@ const OrderList = () => {
 
   const handleCancelOrder = async (orderId) => {
     try {
-      await cancelOrder(orderId);
-      toastCustom("success", "Đã hủy đơn hàng thành công");
+      // await cancelOrder(orderId);
+      toastCustom({
+        title: "Oops!",
+        description: "Thành thật xin lỗi, chúng tôi chưa phát triển tính năng này",
+        color: "warning",
+        variant: "solid",
+      });
       setIsModalOpen(false);
       getMyOrders();
     } catch (error) {
-      toastCustom("error", error.message);
+      toastCustom({
+        title: "Error",
+        description: error.message || "Đã xảy ra lỗi khi hủy đơn hàng",
+        color: "danger",
+     
+      });
     }
   };
 
@@ -123,7 +133,7 @@ const OrderList = () => {
                       color="primary"
                       variant="flat"
                       size="sm"
-                      onClick={() => handleViewOrder(order)}
+                      onPress={() => handleViewOrder(order)}
                     >
                       Xem chi tiết
                     </Button>
@@ -132,7 +142,7 @@ const OrderList = () => {
                         color="danger"
                         variant="flat"
                         size="sm"
-                        onClick={() => handleCancelOrder(order._id)}
+                        onPress={() => handleCancelOrder(order._id)}
                       >
                         Hủy đơn
                       </Button>

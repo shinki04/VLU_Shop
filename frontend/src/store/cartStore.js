@@ -2,13 +2,10 @@ import { create } from "zustand";
 import axios from "axios";
 import { toastCustom } from "../hooks/toastCustom";
 
+const CART_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// const CART_API =
-//   import.meta.env.MODE === "development"
-//     ? "http://localhost:3000/api/cart"
-//     : "/api/cart";
-
-    const CART_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
+// Cấu hình axios để gửi cookie
+axios.defaults.withCredentials = true;
 
 const useCartStore = create((set, get) => ({
   items: [],
@@ -19,7 +16,6 @@ const useCartStore = create((set, get) => ({
   totalItems: 0,
   totalPages: 0,
 
-  // Tính toán các số tiền
   get subtotal() {
     return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
   },
@@ -37,7 +33,6 @@ const useCartStore = create((set, get) => ({
     return get().subtotal + get().shippingPrice + get().taxPrice;
   },
 
-  // Lấy giỏ hàng
   getCart: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -51,7 +46,6 @@ const useCartStore = create((set, get) => ({
     }
   },
 
-  // Thêm sản phẩm vào giỏ hàng
   addToCart: async ({ productId, quantity }) => {
     set({ isLoading: true, error: null });
     try {
@@ -60,92 +54,65 @@ const useCartStore = create((set, get) => ({
         quantity,
       });
       set({ items: response.data.items, isLoading: false });
-      toastCustom({
-        title: "success",
-        description: "Đã thêm sản phẩm vào giỏ hàng",
-      });
+     
     } catch (error) {
       set({
         isLoading: false,
         error: error.response?.data?.message || "Lỗi khi thêm sản phẩm vào giỏ hàng",
       });
-      toastCustom({
-        title: "error",
-        description: error.response?.data?.message || "Lỗi khi thêm sản phẩm vào giỏ hàng",
-      });
+    
     }
   },
 
-  // Cập nhật số lượng sản phẩm
   updateCart: async ({ items }) => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.put(`${CART_API}/api/cart/update`, { items });
       set({ items: response.data.cart.items, isLoading: false });
-      toastCustom({
-        title: "success",
-        description: "Đã cập nhật giỏ hàng",
-      });
+     
     } catch (error) {
       set({
         isLoading: false,
         error: error.response?.data?.message || "Lỗi khi cập nhật giỏ hàng",
       });
-      toastCustom({
-        title: "error",
-        description: error.response?.data?.message || "Lỗi khi cập nhật giỏ hàng",
-      });
+      
     }
   },
 
-  // Xóa sản phẩm khỏi giỏ hàng
   deleteFromCart: async (productId) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.delete(`${CART_API}/api/cart/${productId}`);
-      set({ items: response.data.items, isLoading: false });
-      toastCustom({
-        title: "success",
-        description: "Đã xóa sản phẩm khỏi giỏ hàng",
+      const response = await axios.delete(`${CART_API}/api/cart`, {
+        data: { productIds: [productId] }, // Gửi productIds trong body
       });
+      set({ items: response.data.cart.items, isLoading: false }); // Sửa để lấy cart.items
+    
     } catch (error) {
       set({
         isLoading: false,
         error: error.response?.data?.message || "Lỗi khi xóa sản phẩm khỏi giỏ hàng",
       });
-      toastCustom({
-        title: "error",
-        description: error.response?.data?.message || "Lỗi khi xóa sản phẩm khỏi giỏ hàng",
-      });
+    
     }
   },
 
-  // Xóa toàn bộ giỏ hàng
   clearCart: async () => {
     set({ isLoading: true, error: null });
     try {
       await axios.delete(`${CART_API}/api/cart`);
       set({ items: [], isLoading: false });
-      toastCustom({
-        title: "success",
-        description: "Đã xóa toàn bộ giỏ hàng",
-      });
+      
     } catch (error) {
       set({
         isLoading: false,
         error: error.response?.data?.message || "Lỗi khi xóa giỏ hàng",
       });
-      toastCustom({
-        title: "error",
-        description: error.response?.data?.message || "Lỗi khi xóa giỏ hàng",
-      });
+     
     }
   },
 
-  // Xóa lỗi
   clearError: () => set({ error: null }),
 
-  // Lấy giỏ hàng có phân trang
   fetchCart: async (page = 1, limit = 5) => {
     set({ isLoading: true, error: null });
     try {
@@ -168,7 +135,6 @@ const useCartStore = create((set, get) => ({
     }
   },
 
-  // Cập nhật giỏ hàng (toàn bộ items)
   updateItemQuantity: async (productId, quantity) => {
     set({ isLoading: true, error: null });
     try {
@@ -177,26 +143,25 @@ const useCartStore = create((set, get) => ({
         if (item.product._id === productId) {
           return {
             product: item.product._id,
-            quantity: quantity
+            quantity: quantity,
           };
         }
         return {
           product: item.product._id,
-          quantity: item.quantity
+          quantity: item.quantity,
         };
       });
       
       const response = await axios.put(`${CART_API}/api/cart/update`, { items: updatedItems });
       
-      // Kết hợp dữ liệu mới với URL ảnh từ state hiện tại
       const processedItems = response.data.cart.items.map(newItem => {
         const currentItem = currentItems.find(item => item.product._id === newItem.product._id);
         return {
           ...newItem,
           product: {
             ...newItem.product,
-            image: currentItem?.product?.image || newItem.product.image
-          }
+            image: currentItem?.product?.image || newItem.product.image,
+          },
         };
       });
       

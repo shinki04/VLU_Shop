@@ -9,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 //     : "/api/orders";
 
 const ORDER_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
+axios.defaults.withCredentials = true;
 const useOrderStore = create((set, get) => ({
   orders: [],
   order: null,
