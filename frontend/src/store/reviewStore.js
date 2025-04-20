@@ -3,10 +3,12 @@ import axios, { all } from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const REVIEW_API =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/reviews"
-    : "/api/reviews";
+// const REVIEW_API =
+//   import.meta.env.NODE_ENV === "development"
+//     ? "http://localhost:3000/api/reviews"
+//     : "/api/reviews";
+
+const REVIEW_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // Ensure axios sends cookies with requests
 axios.defaults.withCredentials = true;
@@ -31,7 +33,7 @@ const useReviewStore = create((set, get) => ({
     set({ isLoading: true, error: null, message: null });
     try {
       const response = await axios.post(
-        `${REVIEW_API}/${productId}`,
+        `${REVIEW_API}/api/reviews/${productId}`,
         reviewData
       );
       set({
@@ -57,7 +59,7 @@ const useReviewStore = create((set, get) => ({
     set({ isLoading: true, error: null, message: null });
     try {
       const response = await axios.put(
-        `${REVIEW_API}/${productId}`,
+        `${REVIEW_API}/api/reviews/${productId}`,
         reviewData
       );
       set({
@@ -87,7 +89,7 @@ const useReviewStore = create((set, get) => ({
   getProductReviews: async (productId) => {
     set({ isLoading: true, error: null, message: null });
     try {
-      const response = await axios.get(`${REVIEW_API}/${productId}`);
+      const response = await axios.get(`${REVIEW_API}/api/reviews/${productId}`);
       set({
         reviews: response.data.reviews,
         totalReviews: response.data.numReviews,
@@ -106,7 +108,7 @@ const useReviewStore = create((set, get) => ({
   deleteReview: async (productId) => {
     set({ isLoading: true, error: null, message: null });
     try {
-      const response = await axios.delete(`${REVIEW_API}/${productId}`);
+      const response = await axios.delete(`${REVIEW_API}/api/reviews/${productId}`);
       set({
         reviews: get().reviews.filter((r) => r.product !== productId),
         userReviews: get().userReviews.filter((r) => r.product !== productId),
@@ -126,7 +128,7 @@ const useReviewStore = create((set, get) => ({
   getUserReviews: async (page = 1, limit = 10) => {
     set({ isLoading: true, error: null, message: null });
     try {
-      const response = await axios.get(`${REVIEW_API}/user`, {
+      const response = await axios.get(`${REVIEW_API}/api/reviews/user`, {
         params: { page, limit },
       });
       set({
@@ -151,7 +153,7 @@ const useReviewStore = create((set, get) => ({
   getAllReviews: async (page = 1, limit = 10, keyword = "", sortKey = "", sortOrder = "asc") => {
     set({ isLoading: true, error: null, message: null });
     try {
-      const response = await axios.get(`${REVIEW_API}`, {
+      const response = await axios.get(`${REVIEW_API}/api/reviews`, {
         params: { 
           page, 
           limit,
@@ -202,7 +204,7 @@ const useReviewStore = create((set, get) => ({
         sortOrder,
       });
       
-      const response = await axios.get(`${REVIEW_API}/filter`, {
+      const response = await axios.get(`${REVIEW_API}/api/reviews/filter`, {
         params: {
           productids: productIds?.join(","), // Chuyển đổi mảng thành chuỗi
           ratingRange, // Gửi trực tiếp chuỗi "min,max"

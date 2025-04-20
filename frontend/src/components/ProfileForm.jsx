@@ -19,7 +19,7 @@ import {
 import { toastCustom } from "../hooks/toastCustom";
 
 const ProfileForm = () => {
-  const { currentUser, updateProfile, uploadImage, isLoading } = useUserStore();
+  const { user, updateProfile, uploadImage, isLoading } = useUserStore();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [formData, setFormData] = useState({
     username: "",
@@ -32,16 +32,16 @@ const ProfileForm = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (currentUser) {
+    if (user) {
       setFormData({
-        username: currentUser.username || "",
-        email: currentUser.email || "",
-        phone: currentUser.phone || "",
-        address: currentUser.address || "",
+        username: user.username || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
       });
-      setImagePreview(currentUser.image || null);
+      setImagePreview(user.image || null);
     }
-  }, [currentUser]);
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,19 +74,10 @@ const ProfileForm = () => {
         return;
       }
 
-      if (!formData.email.trim()) {
-        setError("Email không được để trống");
-        return;
-      }
+     
 
-      // Kiểm tra định dạng email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        setError("Email không hợp lệ");
-        return;
-      }
-
-      let imageUrl = currentUser?.image || "";
+    
+      let imageUrl = user?.image || "";
       if (image) {
         imageUrl = await uploadImage(image);
       }
@@ -115,8 +106,8 @@ const ProfileForm = () => {
             />
           </div>
           <div className="flex flex-col items-center">
-            <p className="text-xl font-bold">{currentUser?.username}</p>
-            <p className="text-sm text-gray-500">{currentUser?.email}</p>
+            <p className="text-xl font-bold">{user?.username}</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
         </CardHeader>
         <Divider />
@@ -124,11 +115,11 @@ const ProfileForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-semibold">Số điện thoại</p>
-              <p className="text-sm">{currentUser?.phone || "Chưa cập nhật"}</p>
+              <p className="text-sm">{user?.phone || "Chưa cập nhật"}</p>
             </div>
             <div>
               <p className="text-sm font-semibold">Địa chỉ</p>
-              <p className="text-sm">{currentUser?.address || "Chưa cập nhật"}</p>
+              <p className="text-sm">{user?.address || "Chưa cập nhật"}</p>
             </div>
           </div>
         </CardBody>
@@ -186,8 +177,8 @@ const ProfileForm = () => {
                   label="Email"
                   name="email"
                   type="email"
-                  value={formData.email}
-                  onChange={handleChange}
+                  value={user?.email}
+                  readOnly
                   required
                 />
 

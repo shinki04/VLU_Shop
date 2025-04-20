@@ -95,7 +95,7 @@ const Payment = () => {
       
       // Hiển thị thông báo thành công
       toastCustom({
-        title: "success",
+        title: "Success",
         description: "Đặt hàng thành công! Đơn hàng của bạn đã được lưu.",
       });
 
@@ -110,7 +110,7 @@ const Payment = () => {
 
     } catch (error) {
       toastCustom({
-        title: "error",
+        title: "Error",
         description: error.message || "Có lỗi xảy ra khi tạo đơn hàng",
       });
     }

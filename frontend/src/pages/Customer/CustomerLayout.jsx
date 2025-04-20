@@ -73,10 +73,13 @@ export default function CustomerLayout() {
 
   const avatarSrc = user?.image
     ? `http://localhost:3000${user.image}`
-    : `http://localhost:3000${defaultImage}`;
+    : `http://localhost:3000${defaultImage}`; 
+
+    console.log("Avatar Source:", avatarSrc); // Debugging line
+  console.log("User Image:", user?.image); // Debugging line
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className=" bg-gray-100">
       <Navbar className="bg-white shadow-lg">
         <NavbarBrand>
           <ShopLogo />
@@ -189,7 +192,7 @@ export default function CustomerLayout() {
 
       <div className="flex">
         <main className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
+          <div className="">
             <Outlet />
           </div>
         </main>

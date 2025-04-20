@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import axios from "axios";
 
-const CATEGORY_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/category"
-    : "/api/category";
+// const CATEGORY_URL =
+//   import.meta.env.MODE === "development"
+//     ? "http://localhost:3000/api/category"
+//     : "/api/category";
+
+    const CATEGORY_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const useCategoryStore = create((set) => ({
   categories: [],
@@ -21,7 +23,7 @@ const useCategoryStore = create((set) => ({
   fetchCategories: async (page = 1, limit = 5) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await axios.get(`${CATEGORY_URL}/categories`, {
+      const res = await axios.get(`${CATEGORY_URL}/api/category/categories`, {
         params: { page, limit },
       });
 
@@ -43,7 +45,7 @@ const useCategoryStore = create((set) => ({
   addCategory: async (newCategory) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await axios.post(CATEGORY_URL, newCategory);
+      const res = await axios.post(`${CATEGORY_URL}/api/category`, newCategory);
       set((state) => ({
         categories: [...state.categories, res.data],
         isLoading: false,
@@ -60,7 +62,7 @@ const useCategoryStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       await axios.put(
-        `${CATEGORY_URL}/${updatedCategory._id}`,
+        `${CATEGORY_URL}/api/category/${updatedCategory._id}`,
         updatedCategory
       );
       set((state) => ({
@@ -80,7 +82,7 @@ const useCategoryStore = create((set) => ({
   deleteCategory: async (categoryId) => {
     set({ isLoading: true, error: null });
     try {
-      await axios.delete(`${CATEGORY_URL}/${categoryId}`);
+      await axios.delete(`${CATEGORY_URL}/api/category/${categoryId}`);
       set((state) => ({
         categories: state.categories.filter((cat) => cat._id !== categoryId),
         isLoading: false,
@@ -102,7 +104,7 @@ const useCategoryStore = create((set) => ({
   ) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await axios.get(`${CATEGORY_URL}/search`, {
+      const res = await axios.get(`${CATEGORY_URL}/api/category/search`, {
         params: { q, page, limit, sortBy, sortOrder },
       });
       set({

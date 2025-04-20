@@ -8,16 +8,15 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  useDisclosure,
   Card,
   CardHeader,
   CardBody,
   CardFooter,
   Divider,
   Image,
+  useDisclosure,
   Chip,
 } from "@heroui/react";
-import CustomInputPass from "../CustomInputPass";
 import { toastCustom } from "../../hooks/toastCustom";
 import CustomModal from "../../components/Modal/CustomModal.jsx";
 
@@ -32,27 +31,27 @@ const UpdateProfile = () => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-   
   });
 
-  const baseUrl =
-    import.meta.env.NODE_ENV === "production" ? "" : "http://localhost:3000";
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   const getCurrent = async () => {
-    await getUserDetails(user._id)
+    await getUserDetails(user._id);
   };
+  console.log("user", `${baseUrl}${user.image}`);
 
   useEffect(() => {
     if (user) {
       setFormData({
         username: user.username || "",
-        email: user.email || "",
-       
+        phone: user.phone || "",
       });
-      setImagePreview(user.image ? `${baseUrl}${user.image}` : null);
+      if (!image) {
+        setImagePreview(user.image ? `${baseUrl}${user.image}` : null);
+      }
       getCurrent();
     }
-  }, [user, baseUrl, imagePreview]);
+  }, [user, baseUrl]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +61,7 @@ const UpdateProfile = () => {
     }));
   };
 
-  const handleImageChange = async (e) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -71,16 +70,6 @@ const UpdateProfile = () => {
       }
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
-      try {
-        const imageUrl = await uploadImage(file);
-        await updateProfile({ image: imageUrl });
-        toastCustom({
-          title: "Thành công",
-          description: "Ảnh đại diện đã thay đổi",
-        });
-      } catch (err) {
-        setErrorMess(err.message || "Có lỗi upload ảnh");
-      }
     }
   };
 
@@ -92,39 +81,41 @@ const UpdateProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMess("");
 
     try {
-      // Kiểm tra các trường bắt buộc
       if (!formData.username.trim()) {
         setErrorMess("Tên người dùng không được để trống");
         return;
       }
 
-      if (!formData.email.trim()) {
-        setErrorMess("Email không được để trống");
-        return;
-      }
-
-      // Kiểm tra định dạng email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        setErrorMess("Email không hợp lệ");
+      if (!formData.phone.trim()) {
+        setErrorMess("Phone không được để trống");
         return;
       }
 
       let imageUrl = user?.image || "";
       if (image) {
         imageUrl = await uploadImage(image);
+        if (!imageUrl) {
+          throw new Error("Không thể upload ảnh");
+        }
       }
-      console.log(formData);
-      const res = await updateProfile({ formData, image: imageUrl });
-      console.log(res);
+
+      const profileData = {
+        username: formData.username,
+        phone: formData.phone,
+        image: imageUrl,
+      };
+
+      console.log("Submitting profile data:", profileData);
+      await updateProfile(profileData);
+      // console.log("Update response:", res);
+
       toastCustom({
         title: "Thành công",
         description: "Cập nhật thông tin thành công",
       });
-      onOpenChange(false);
+      setUpdateModalOpen(false);
     } catch (err) {
       setErrorMess(err.message || "Có lỗi xảy ra khi cập nhật thông tin");
     }
@@ -139,7 +130,7 @@ const UpdateProfile = () => {
         message={error || errorMess}
       />
       <div className="flex justify-center">
-        <Card className="max-w-3xl ">
+        <Card className="max-w-3xl">
           <CardHeader className="flex flex-col gap-3">
             <div className="flex justify-center">
               <Image
@@ -149,9 +140,7 @@ const UpdateProfile = () => {
                 width={400}
                 isBlurred
                 isZoomed
-                // loading="eager"
                 className="z-50 opacity-100"
-                // className="border-none bg-background/60 dark:bg-default-100/50"
               />
             </div>
             <div className="flex justify-center">
@@ -162,12 +151,12 @@ const UpdateProfile = () => {
                 className="hidden"
                 id="image-upload"
               />
-              <label
+              {/* <label
                 htmlFor="image-upload"
                 className="text-sm text-blue-500 cursor-pointer hover:text-blue-700"
               >
                 Thay đổi ảnh đại diện
-              </label>
+              </label> */}
             </div>
             <div className="flex flex-col items-center">
               <p className="text-xl font-bold">{user?.username}</p>
@@ -176,17 +165,11 @@ const UpdateProfile = () => {
           </CardHeader>
           <Divider />
           <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* <div>
-                <p className="text-sm font-semibold">Số điện thoại</p>
-                <p className="text-sm">{user?.phone || "Chưa cập nhật"}</p>
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Địa chỉ</p>
-                <p className="text-sm">{user?.address || "Chưa cập nhật"}</p>
-              </div> */}
-              <div>
-                <p className="text-sm font-semibold">Trạng thái xác thực</p>
+            <div className="flex flex-col gap-4 justify-center leading-normal	">
+              <div className="flex flex-col my-3 items-center">
+                <p className="text-sm font-semibold py-1">
+                  Trạng thái xác thực
+                </p>
                 <Chip
                   color={user?.isVerified ? "success" : "warning"}
                   size="sm"
@@ -194,23 +177,27 @@ const UpdateProfile = () => {
                 >
                   {user?.isVerified ? "Đã xác thực" : "Chưa xác thực"}
                 </Chip>
+                <div className="flex flex-col my-3 items-center">
+                  <p className="text-sm font-semibold py-1">"Số điện thoại</p>
+                  <p className="text-sm">{user?.phone || "Chưa cập nhật"}</p>
+                </div>
               </div>
             </div>
           </CardBody>
           <Divider />
           <CardFooter>
-            <Button color="primary" onPress={setUpdateModalOpen}>
+            <Button
+              color="primary"
+              className="w-full"
+              onPress={() => setUpdateModalOpen(true)}
+            >
               Cập nhật thông tin
             </Button>
           </CardFooter>
         </Card>
       </div>
 
-      <Modal
-        isOpen={updateModalOpen}
-        onClose={() => setUpdateModalOpen(false)}
-        // onOpenChange={onOpenChange}
-      >
+      <Modal isOpen={updateModalOpen} onClose={() => setUpdateModalOpen(false)}>
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader>Cập nhật thông tin cá nhân</ModalHeader>
@@ -256,39 +243,23 @@ const UpdateProfile = () => {
                   label="Email"
                   name="email"
                   type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  isRequired
+                  value={user?.email}
+                  isReadOnly
+                  isDisabled
                 />
-
-                {/* <Input
+                <Input
                   label="Số điện thoại"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                 />
-
-                <Input
-                  label="Địa chỉ"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                /> */}
-
-                {/* <CustomInputPass
-                  label="Nhập lại mật khẩu"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  labelPlacement="inside"
-                /> */}
               </div>
             </ModalBody>
             <ModalFooter>
               <Button
                 color="danger"
                 variant="light"
-                onPress={() => onOpenChange(false)}
+                onPress={() => setUpdateModalOpen(false)}
               >
                 Hủy
               </Button>

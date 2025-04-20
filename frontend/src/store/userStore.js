@@ -2,10 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios from "axios";
 
-const USERS_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/users"
-    : "/api/users";
+const USERS_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const UPLOAD_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -31,7 +28,7 @@ const useUserStore = create(
       register: async (email, password, username) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(`${API_URL}/register`, {
+          const response = await axios.post(`${API_URL}/api/auth/register`, {
             email,
             password,
             username,
@@ -53,7 +50,7 @@ const useUserStore = create(
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(`${API_URL}/login`, {
+          const response = await axios.post(`${API_URL}/api/auth/login`, {
             email,
             password,
           });
@@ -74,7 +71,7 @@ const useUserStore = create(
       logout: async () => {
         set({ isLoading: true, error: null });
         try {
-          await axios.post(`${API_URL}/logout`);
+          await axios.post(`${API_URL}/api/auth/logout`);
           set({ user: null, isAuthenticated: false, isLoading: false });
         } catch (error) {
           set({
@@ -88,7 +85,7 @@ const useUserStore = create(
       verifyEmail: async (code) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(`${API_URL}/verify-email`, {
+          const response = await axios.post(`${API_URL}/api/auth/verify-email`, {
             code,
           });
           set({
@@ -109,7 +106,7 @@ const useUserStore = create(
       checkAuth: async () => {
         set({ isCheckingAuth: true, error: null });
         try {
-          const response = await axios.get(`${API_URL}/check-auth`);
+          const response = await axios.get(`${API_URL}/api/auth/check-auth`);
           set({
             user: response.data.user,
             isAuthenticated: true,
@@ -128,7 +125,7 @@ const useUserStore = create(
       forgotPassword: async (email) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(`${API_URL}/forgot-password`, {
+          const response = await axios.post(`${API_URL}/api/auth/forgot-password`, {
             email,
           });
           set({ message: response.data.message, isLoading: false });
@@ -147,7 +144,7 @@ const useUserStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await axios.post(
-            `${API_URL}/reset-password/${token}`,
+            `${API_URL}/api/auth/reset-password/${token}`,
             { password }
           );
           set({ message: response.data.message, isLoading: false });
@@ -163,7 +160,7 @@ const useUserStore = create(
       updateProfile: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.put(`${USERS_URL}/profile`, data);
+          const res = await axios.put(`${USERS_URL}/api/users/profile`, data);
           set({ currentUser: res.data, user: res.data.user, isLoading: false });
         } catch (err) {
           set({
@@ -177,7 +174,9 @@ const useUserStore = create(
       fetchUsers: async (page = 1, limit = 5) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.get(`${API_URL}/api/users?page=${page}&limit=${limit}`);
+          const response = await axios.get(
+            `${API_URL}/api/auth/api/users?page=${page}&limit=${limit}`
+          );
           set({
             users: response.data.users,
             total: response.data.totalUsers,
@@ -197,7 +196,7 @@ const useUserStore = create(
       getCurrentUser: async () => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.get(`${USERS_URL}/profile`);
+          const res = await axios.get(`${USERS_URL}/api/users/profile`);
           set({ currentUser: res.data, user: res.data.user, isLoading: false });
         } catch (err) {
           set({
@@ -211,7 +210,7 @@ const useUserStore = create(
       deleteUser: async (userId) => {
         set({ isLoading: true, error: null });
         try {
-          await axios.delete(`${USERS_URL}/${userId}`);
+          await axios.delete(`${USERS_URL}/api/users/${userId}`);
           set((state) => ({
             users: state.users.filter((user) => user._id !== userId),
             isLoading: false,
@@ -228,7 +227,7 @@ const useUserStore = create(
       getUserDetails: async (userId) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.get(`${USERS_URL}/${userId}`);
+          const res = await axios.get(`${USERS_URL}/api/users/${userId}`);
           set({ isLoading: false });
           return res.data;
         } catch (err) {
@@ -243,7 +242,7 @@ const useUserStore = create(
       createUserByAdmin: async (newUser) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.post(USERS_URL, newUser);
+          const res = await axios.post(`${USERS_URL}/api/users/api/users`, newUser);
           set((state) => ({
             newUser: [...state.users, res.data],
             isLoading: false,
@@ -260,7 +259,7 @@ const useUserStore = create(
       updateUser: async (updatedUser) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.put(`${USERS_URL}/${updatedUser._id}`, {
+          const res = await axios.put(`${USERS_URL}/api/users/${updatedUser._id}`, {
             username: updatedUser.username,
             role: updatedUser.role,
             isVerified: updatedUser.isVerified,
@@ -283,7 +282,7 @@ const useUserStore = create(
       searchUsersByKeyword: async (q, page = 1, limit = 5) => {
         set({ isLoading: true, error: null });
         try {
-          const res = await axios.get(`${USERS_URL}/search`, {
+          const res = await axios.get(`${USERS_URL}/api/users/search`, {
             params: { q, page, limit },
             headers: { "Cache-Control": "no-cache" },
           });
@@ -303,27 +302,27 @@ const useUserStore = create(
           throw err;
         }
       },
-      // Upload ảnh
-      uploadImage: async (image) => {
-        set({ isLoading: true, error: null });
-        try {
-          const formData = new FormData();
-          formData.append("image", image);
-          const res = await axios.post(`${UPLOAD_URL}/?type=single`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-            withCredentials: true,
-          });
-          set({ isLoading: false });
-          return res.data.images[0].url; // Trả về URL ảnh
-        } catch (err) {
-          set({
-            error: err.response?.data?.message || "Image upload failed",
-            isLoading: false,
-          });
-          throw err;
-        }
-      },
-    }),
+        // Upload ảnh
+        uploadImage: async (image) => {
+          set({ isLoading: true, error: null });
+          try {
+            const formData = new FormData();
+            formData.append("image", image);
+            const res = await axios.post(`${UPLOAD_URL}/api/upload/?type=single`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+              withCredentials: true,
+            });
+            set({ isLoading: false });
+            return res.data.images[0].url; // Trả về URL ảnh
+          } catch (err) {
+            set({
+              error: err.response?.data?.message || "Image upload failed",
+              isLoading: false,
+            });
+            throw err;
+          }
+        },
+      }),
     {
       name: "user-storage",
       partialize: (state) => ({

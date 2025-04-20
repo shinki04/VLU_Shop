@@ -18,7 +18,7 @@ const Home = () => {
   const newArrivals = products.slice(6, 12);
 
   return (
-    <div className="min-h-screen">
+    <div className="">
       {/* Hero Banner */}
       <div className="relative h-[500px]">
         <Image

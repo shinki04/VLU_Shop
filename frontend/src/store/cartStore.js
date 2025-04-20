@@ -2,12 +2,13 @@ import { create } from "zustand";
 import axios from "axios";
 import { toastCustom } from "../hooks/toastCustom";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
-const CART_API =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/cart"
-    : "/api/cart";
+// const CART_API =
+//   import.meta.env.MODE === "development"
+//     ? "http://localhost:3000/api/cart"
+//     : "/api/cart";
+
+    const CART_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const useCartStore = create((set, get) => ({
   items: [],
@@ -40,7 +41,7 @@ const useCartStore = create((set, get) => ({
   getCart: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(CART_API);
+      const response = await axios.get(`${CART_API}/api/cart`);
       set({ items: response.data.items, isLoading: false });
     } catch (error) {
       set({
@@ -54,7 +55,7 @@ const useCartStore = create((set, get) => ({
   addToCart: async ({ productId, quantity }) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(`${CART_API}/add`, {
+      const response = await axios.post(`${CART_API}/api/cart/add`, {
         productId,
         quantity,
       });
@@ -79,7 +80,7 @@ const useCartStore = create((set, get) => ({
   updateCart: async ({ productId, quantity }) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.put(`${CART_API}/update`, {
+      const response = await axios.put(`${CART_API}/api/cart/update`, {
         productId,
         quantity,
       });
@@ -104,7 +105,7 @@ const useCartStore = create((set, get) => ({
   deleteFromCart: async (productId) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.delete(`${CART_API}/${productId}`);
+      const response = await axios.delete(`${CART_API}/api/cart/${productId}`);
       set({ items: response.data.items, isLoading: false });
       toastCustom({
         title: "success",
@@ -126,7 +127,7 @@ const useCartStore = create((set, get) => ({
   clearCart: async () => {
     set({ isLoading: true, error: null });
     try {
-      await axios.delete(CART_API);
+      await axios.delete(`${CART_API}/api/cart`);
       set({ items: [], isLoading: false });
       toastCustom({
         title: "success",
@@ -151,7 +152,7 @@ const useCartStore = create((set, get) => ({
   fetchCart: async (page = 1, limit = 5) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${CART_API}`, {
+      const response = await axios.get(`${CART_API}/api/cart`, {
         params: { page, limit },
       });
       set({
@@ -185,7 +186,7 @@ const useCartStore = create((set, get) => ({
         return item;
       });
       
-      const response = await axios.put(`${CART_API}/update`, { items: updatedItems });
+      const response = await axios.put(`${CART_API}/api/cart/update`, { items: updatedItems });
       
       // Kết hợp dữ liệu mới với URL ảnh từ state hiện tại
       const processedItems = response.data.cart.items.map(newItem => {

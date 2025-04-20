@@ -68,7 +68,7 @@ function App() {
   return (
     <HeroUIProvider>
       <ToastProvider placement="top-right" />
-      <div className="h-[var(--visual-viewport-height)]  min-h-screen container mx-auto">
+      <div className="">
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />

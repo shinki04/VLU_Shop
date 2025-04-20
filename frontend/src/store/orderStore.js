@@ -3,10 +3,12 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const ORDER_API =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/orders"
-    : "/api/orders";
+// const ORDER_API =
+//   import.meta.env.MODE === "development"
+//     ? "http://localhost:3000/api/orders"
+//     : "/api/orders";
+
+const ORDER_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const useOrderStore = create((set, get) => ({
   orders: [],
@@ -22,7 +24,7 @@ const useOrderStore = create((set, get) => ({
   getAllOrders: async (params = {}) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(ORDER_API, { params });
+      const response = await axios.get(`${ORDER_API}/api/orders`, { params });
       set({
         orders: response.data.orders,
         totalOrders: response.data.totalOrders,
@@ -45,7 +47,7 @@ const useOrderStore = create((set, get) => ({
   getMyOrders: async (page = 1, limit = 10) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${ORDER_API}/myorders`, {
+      const response = await axios.get(`${ORDER_API}/api/orders/myorders`, {
         params: { page, limit },
       });
       set({
@@ -70,7 +72,7 @@ const useOrderStore = create((set, get) => ({
   getOrderDetails: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${ORDER_API}/${id}`);
+      const response = await axios.get(`${ORDER_API}/api/orders/${id}`);
       set({ order: response.data.order, isLoading: false });
       return response.data;
     } catch (error) {
@@ -86,7 +88,7 @@ const useOrderStore = create((set, get) => ({
   createOrder: async (orderData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(ORDER_API, orderData);
+      const response = await axios.post(`${ORDER_API}/api/orders`, orderData);
       set({ isLoading: false });
       return response.data;
     } catch (error) {
@@ -102,7 +104,10 @@ const useOrderStore = create((set, get) => ({
   createOrderByAdmin: async (orderData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(`${ORDER_API}/admin`, orderData);
+      const response = await axios.post(
+        `${ORDER_API}/api/orders/admin`,
+        orderData
+      );
       set({ isLoading: false });
       return response.data;
     } catch (error) {
@@ -118,7 +123,10 @@ const useOrderStore = create((set, get) => ({
   updateOrder: async (id, orderData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.put(`${ORDER_API}/${id}`, orderData);
+      const response = await axios.put(
+        `${ORDER_API}/api/orders/${id}`,
+        orderData
+      );
       set({ isLoading: false });
       return response.data;
     } catch (error) {
@@ -134,7 +142,7 @@ const useOrderStore = create((set, get) => ({
   deleteOrder: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.delete(`${ORDER_API}/${id}`);
+      const response = await axios.delete(`${ORDER_API}/api/orders/${id}`);
       set({ isLoading: false });
       return response.data;
     } catch (error) {
@@ -150,7 +158,10 @@ const useOrderStore = create((set, get) => ({
   payOrder: async (id, paymentResult) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.put(`${ORDER_API}/${id}/pay`, paymentResult);
+      const response = await axios.put(
+        `${ORDER_API}/api/orders/${id}/pay`,
+        paymentResult
+      );
       set({ isLoading: false });
       return response.data;
     } catch (error) {
@@ -166,13 +177,18 @@ const useOrderStore = create((set, get) => ({
   deliverOrder: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.put(`${ORDER_API}/${id}/deliver`, {});
+      const response = await axios.put(
+        `${ORDER_API}/api/orders/${id}/deliver`,
+        {}
+      );
       set({ isLoading: false });
       return response.data;
     } catch (error) {
       set({
         isLoading: false,
-        error: error.response?.data?.message || "Lỗi khi cập nhật trạng thái giao hàng",
+        error:
+          error.response?.data?.message ||
+          "Lỗi khi cập nhật trạng thái giao hàng",
       });
       throw error;
     }
@@ -182,7 +198,7 @@ const useOrderStore = create((set, get) => ({
   getOrderStats: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${ORDER_API}/stats`);
+      const response = await axios.get(`${ORDER_API}/api/orders/stats`);
       set({ isLoading: false });
       return response.data;
     } catch (error) {

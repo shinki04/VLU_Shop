@@ -14,13 +14,20 @@ import {
 import { formatPrice } from "../../utils/formatters";
 import { toastCustom } from "../../hooks/toastCustom";
 
-const API_URL = import.meta.env.MODE === "development" 
-  ? "http://localhost:3000" 
-  : "";
+// const API_URL = import.meta.env.MODE === "development"
+//   ? "http://localhost:3000"
+//   : "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { items = [], updateCart, deleteFromCart, fetchCart, isLoading } = useCartStore();
+  const {
+    items = [],
+    updateCart,
+    deleteFromCart,
+    fetchCart,
+    isLoading,
+  } = useCartStore();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -29,8 +36,8 @@ const Cart = () => {
 
   // Hàm xử lý URL ảnh
   const getImageUrl = (image) => {
-    if (!image) return '/default-product.png';
-    return image.startsWith('http') ? image : `${API_URL}${image}`;
+    if (!image) return "/default-product.png";
+    return image.startsWith("http") ? image : `${API_URL}${image}`;
   };
 
   const handleUpdateQuantity = async (item, newQty) => {
@@ -125,17 +132,23 @@ const Cart = () => {
                     className="w-24 h-24 object-contain"
                   />
                   <div className="flex-1">
-                    <h3 className="font-semibold">{item.product?.name || "Sản phẩm"}</h3>
+                    <h3 className="font-semibold">
+                      {item.product?.name || "Sản phẩm"}
+                    </h3>
                     <p className="text-primary font-bold">
                       {formatPrice(item.price)}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Chip
-                        color={item.product?.countInStock > 0 ? "success" : "danger"}
+                        color={
+                          item.product?.countInStock > 0 ? "success" : "danger"
+                        }
                         size="sm"
                         variant="flat"
                       >
-                        {item.product?.countInStock > 0 ? "Còn hàng" : "Hết hàng"}
+                        {item.product?.countInStock > 0
+                          ? "Còn hàng"
+                          : "Hết hàng"}
                       </Chip>
                     </div>
                   </div>
@@ -144,7 +157,9 @@ const Cart = () => {
                       <Button
                         isIconOnly
                         variant="flat"
-                        onPress={() => handleUpdateQuantity(item, item.quantity - 1)}
+                        onPress={() =>
+                          handleUpdateQuantity(item, item.quantity - 1)
+                        }
                         isDisabled={item.quantity <= 1}
                       >
                         -
@@ -161,8 +176,10 @@ const Cart = () => {
                       />
                       <Button
                         isIconOnly
-                        variant="flat"
-                        onPress={() => handleUpdateQuantity(item, item.quantity + 1)}
+                        size="sm"
+                        onPress={() =>
+                          handleUpdateQuantity(item, item.quantity + 1)
+                        }
                         isDisabled={item.quantity >= item.product?.countInStock}
                       >
                         +
@@ -170,7 +187,6 @@ const Cart = () => {
                     </div>
                     <Button
                       color="danger"
-                      variant="light"
                       size="sm"
                       onPress={() => handleRemoveFromCart(item._id)}
                     >

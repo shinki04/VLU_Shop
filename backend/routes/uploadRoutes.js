@@ -34,9 +34,13 @@ const storage = multer.diskStorage({
     cb(null, dest);
   },
   filename: (req, file, cb) => {
-    // Giữ nguyên tên file gốc
-    const originalName = file.originalname;
-    cb(null, originalName);
+    // Tạo tên file mới dựa trên loại upload
+    const uploadType = req.query.type || "single";
+    const prefix = uploadType === "multiple" ? "product" : "user";
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname).toLowerCase();
+    const fileName = `${prefix}-${uniqueSuffix}${ext}`;
+    cb(null, fileName);
   },
 });
 
