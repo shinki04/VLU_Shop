@@ -142,6 +142,13 @@ export const getCart = asyncHandler(async (req, res) => {
 export const updateCart = asyncHandler(async (req, res) => {
   const { items } = req.body; // items: [{ productId, quantity }]
 
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid items data"
+    });
+  }
+
   try {
     let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
@@ -198,15 +205,12 @@ export const updateCart = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Cart updated successfully",
-      cart,
+      cart
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
-      error: error.message,
+      message: error.message
     });
   }
 });

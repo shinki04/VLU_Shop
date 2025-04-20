@@ -43,7 +43,7 @@ const Cart = () => {
   const handleUpdateQuantity = async (item, newQty) => {
     if (newQty > item.product.countInStock) {
       toastCustom({
-        title: "error",
+        title: "Error",
         description: "Số lượng không đủ",
       });
       return;
@@ -53,19 +53,25 @@ const Cart = () => {
       // Tạo một bản sao của items và cập nhật số lượng cho item được chọn
       const updatedItems = items.map((cartItem) => {
         if (cartItem._id === item._id) {
-          return { ...cartItem, quantity: newQty };
+          return {
+            product: cartItem.product._id,
+            quantity: newQty
+          };
         }
-        return cartItem;
+        return {
+          product: cartItem.product._id,
+          quantity: cartItem.quantity
+        };
       });
 
-      await updateCart(updatedItems);
+      await updateCart({ items: updatedItems });
       toastCustom({
-        title: "success",
+        title: "Success",
         description: "Đã cập nhật số lượng sản phẩm",
       });
     } catch (error) {
       toastCustom({
-        title: "error",
+        title: "Error",
         description: error.message || "Có lỗi xảy ra khi cập nhật số lượng",
       });
     }
@@ -76,7 +82,7 @@ const Cart = () => {
       await deleteFromCart([itemId]);
     } catch (error) {
       toastCustom({
-        title: "error",
+        title: "Error",
         description: error.message || "Không thể xóa sản phẩm",
       });
     }

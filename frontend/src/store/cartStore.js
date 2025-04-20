@@ -77,14 +77,11 @@ const useCartStore = create((set, get) => ({
   },
 
   // Cập nhật số lượng sản phẩm
-  updateCart: async ({ productId, quantity }) => {
+  updateCart: async ({ items }) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.put(`${CART_API}/api/cart/update`, {
-        productId,
-        quantity,
-      });
-      set({ items: response.data.items, isLoading: false });
+      const response = await axios.put(`${CART_API}/api/cart/update`, { items });
+      set({ items: response.data.cart.items, isLoading: false });
       toastCustom({
         title: "success",
         description: "Đã cập nhật giỏ hàng",
@@ -179,11 +176,14 @@ const useCartStore = create((set, get) => ({
       const updatedItems = currentItems.map(item => {
         if (item.product._id === productId) {
           return {
-            ...item,
+            product: item.product._id,
             quantity: quantity
           };
         }
-        return item;
+        return {
+          product: item.product._id,
+          quantity: item.quantity
+        };
       });
       
       const response = await axios.put(`${CART_API}/api/cart/update`, { items: updatedItems });
