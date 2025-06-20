@@ -311,7 +311,7 @@ const useUserStore = create(
           try {
             const formData = new FormData();
             formData.append("image", image);
-            const res = await axios.post(`${BASE_URL}/api/upload/?type=single`, formData, {
+            const res = await axios.post(`${BASE_URL}/api/upload?type=single`, formData, {
               headers: { "Content-Type": "multipart/form-data" },
               withCredentials: true,
             });

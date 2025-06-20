@@ -25,7 +25,7 @@ app.use(morgan("dev"));
 const corsOptions = {
   origin:
     process.env.NODE_ENV === "production"
-      ? process.env.FRONTEND_URL
+      ? process.env.VITE_API_URL
       : "http://localhost:5173",
   credentials: true,
 };

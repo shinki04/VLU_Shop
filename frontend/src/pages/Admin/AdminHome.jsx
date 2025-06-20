@@ -83,9 +83,12 @@ export default function HomePage() {
     { name: 'Contact', href: '/contact' },
   ];
 
+
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:3000";
+
   const avatarSrc = user?.image
-    ? `http://localhost:3000${user.image}`
-    : `http://localhost:3000${defaultImage}`;
+    ? `${BASE_URL}/${user.image}`
+    : `${BASE_URL}/${defaultImage}`;
 
   // Sample product data for "The Best Dress for the Best Woman"
   const bestDresses = [

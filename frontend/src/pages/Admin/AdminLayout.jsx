@@ -72,11 +72,12 @@ export default function AdminLayout() {
     { name: "Reviews", href: "/admin/reviews" },
     { name: "Order", href: "/admin/orders" },
   ];
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:3000";
 
   // Construct the avatar image URL
   const avatarSrc = user?.image
-    ? `http://localhost:3000${user.image}`
-    : `http://localhost:3000${defaultImage}`;
+    ? `${BASE_URL}/${user.image}`
+    : `${BASE_URL}/${defaultImage}`;
 
   return (
     <div className="min-h-screen">

@@ -4,7 +4,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// const PRODUCT_API =
+// const BASE_URL =
 //   import.meta.env.MODE === "development"
 //     ? "http://localhost:3000/api/products"
 //     : "/api/products";
@@ -14,8 +14,8 @@ const API_URL = import.meta.env.VITE_API_URL;
 //     ? "http://localhost:3000/api/upload"
 //     : "/api/upload";
 
-    const PRODUCT_API = import.meta.env.VITE_API_URL || "http://localhost:3000";
-    const UPLOAD_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    // const UPLOAD_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const useProductStore = create((set) => ({
   products: [],
@@ -35,7 +35,7 @@ const useProductStore = create((set) => ({
   addProduct: async (productData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(`${PRODUCT_API}/api/products`, productData);
+      const response = await axios.post(`${BASE_URL}/api/products`, productData);
       set((state) => ({
         products: [...state.products, response.data.product],
         isLoading: false,
@@ -55,7 +55,7 @@ const useProductStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.put(
-        `${PRODUCT_API}/api/products/${productId}`,
+        `${BASE_URL}/api/products/${productId}`,
         updatedData
       );
       set((state) => ({
@@ -77,7 +77,7 @@ const useProductStore = create((set) => ({
   removeProduct: async (productId) => {
     set({ isLoading: true, error: null });
     try {
-      await axios.delete(`${PRODUCT_API}/api/products/${productId}`);
+      await axios.delete(`${BASE_URL}/api/products/${productId}`);
       set((state) => ({
         products: state.products.filter((prod) => prod._id !== productId),
         isLoading: false,
@@ -95,7 +95,7 @@ const useProductStore = create((set) => ({
   fetchProductById: async (productId) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${PRODUCT_API}/api/products/${productId}`);
+      const response = await axios.get(`${BASE_URL}/api/products/${productId}`);
       set({ product: response.data.product, isLoading: false });
       return response.data.product;
     } catch (error) {
@@ -111,7 +111,7 @@ const useProductStore = create((set) => ({
   fetchAllProducts: async (page = 1, limit = 10) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${PRODUCT_API}/api/products`, {
+      const response = await axios.get(`${BASE_URL}/api/products`, {
         params: { page, limit },
       });
       set({
@@ -142,7 +142,7 @@ const useProductStore = create((set) => ({
   ) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${PRODUCT_API}/api/products/filter`, {
+      const response = await axios.get(`${BASE_URL}/api/products/filter`, {
         params: {
           search: searchValue, // Điều này giữ nguyên, searchValue là giá trị tìm kiếm
           page, // Thay vì `search`, truyền `page`
@@ -173,7 +173,7 @@ const useProductStore = create((set) => ({
   fetchNewProducts: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${PRODUCT_API}/api/products/new`);
+      const response = await axios.get(`${BASE_URL}/api/products/new`);
       set({ products: response.data.products, isLoading: false });
     } catch (error) {
       set({
@@ -195,7 +195,7 @@ const useProductStore = create((set) => ({
       });
       // formData.append("images", images);
       // Send multiple images to the backend
-      const res = await axios.post(`${UPLOAD_URL}/api/upload?type=multiple`, formData, {
+      const res = await axios.post(`${BASE_URL}/api/upload?type=multiple`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
